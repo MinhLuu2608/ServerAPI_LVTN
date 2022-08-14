@@ -118,6 +118,32 @@ namespace ServerAPI.Controllers
             return new JsonResult(table);
         }
 
+        [HttpGet("quanhuyen/{id}")]
+        public JsonResult GetByQuanHuyen(int id)
+        {
+            string query = @"select * from dbo.NhanVien 
+                join dbo.PhanTuyen on NhanVien.IDNhanVien = PhanTuyen.IDNhanVien 
+                where IDQuanHuyen = " + id;
+            DataTable table = new DataTable();
+
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            return new JsonResult(table);
+        }
+
         [HttpGet("CheckTuyenThu/{idNV}")]
         public JsonResult GetCheckTuyenThu(int idNV)
         {

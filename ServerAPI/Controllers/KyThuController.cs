@@ -211,12 +211,12 @@ namespace ServerAPI.Controllers
         {
             string queryCheck = "Select * from dbo.KyThu where Thang = " + kt.Thang + @" and Nam =" + kt.Nam;
             DataTable dt = new DataTable();
-            string query = @"insert into dbo.KyThu values
-                (N'Kỳ thu tháng " + kt.Thang + @" năm " + kt.Nam + @"','" + kt.Thang + @"','" + kt.Nam + @"', SYSDATETIME())";
-            string query2 = @"Select IDKyThu from dbo.KyThu where 
-                Thang = " + kt.Thang + @" and Nam = " + kt.Nam;
-            string query3 = @"Select IDKhachHang, IDTuyenThu, IDLoaiKhachHang from dbo.KhachHang join dbo.XaPhuong on 
-                dbo.KhachHang.IDXaPhuong = dbo.XaPhuong.IDXaPhuong where TrangThai = 1";
+            string queryCheckTuyenThuKhachHang = @"Select IDKhachHang, IDTuyenThu, KhachHang.IDLoaiKhachHang, Gia 
+                from dbo.KhachHang 
+                join LoaiKhachHang on LoaiKhachHang.IDLoaiKhachHang = KhachHang.IDLoaiKhachHang
+                join dbo.XaPhuong on dbo.KhachHang.IDXaPhuong = dbo.XaPhuong.IDXaPhuong 
+                join dbo.ThuocTuyen on ThuocTuyen.IDXaPhuong = XaPhuong.IDXaPhuong
+                where TrangThai = 1";
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
 
             DataTable table = new DataTable();
@@ -235,13 +235,19 @@ namespace ServerAPI.Controllers
                 if (dt.Rows.Count > 0)
                 {
                     myCon.Close();
-                    return new JsonResult("Đã tồn tại kỳ thu tháng " + kt.Thang + " năm " + kt.Nam);
+                    return new JsonResult(new
+                    {
+                        severity = "warning",
+                        message = "Đã tồn tại kỳ thu tháng " + kt.Thang + " năm " + kt.Nam
+                    }
+                    );
                 }
                 else
-                {                    
+                {
+                    Console.WriteLine(status);
                     if (status)
                     {
-                        using (SqlCommand myCommand = new SqlCommand(query3, myCon))
+                        using (SqlCommand myCommand = new SqlCommand(queryCheckTuyenThuKhachHang, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
                             table2.Load(myReader);
@@ -260,22 +266,28 @@ namespace ServerAPI.Controllers
                                 );
                             }
                         }
+                        string queryGetIDKyThu = @"Select max(IDKyThu) + 1 from KyThu";
+                        DataTable tblGetIDKyThu = new DataTable();
+                        using (SqlCommand myCommand = new SqlCommand(queryGetIDKyThu, myCon))
+                        {
+                            myReader = myCommand.ExecuteReader();
+                            tblGetIDKyThu.Load(myReader);
+                            myReader.Close();
+                        }
+                        string IDKyThuInsert = tblGetIDKyThu.Rows[0][0].ToString();
+                        string query = @"insert into dbo.KyThu values(" + IDKyThuInsert +
+                            ",N'Kỳ thu tháng " + kt.Thang + " năm " + kt.Nam +
+                            "','" + kt.Thang + "','" + kt.Nam + "', SYSDATETIME())";
                         using (SqlCommand myCommand = new SqlCommand(query, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
                             myReader.Close();
                         }
-                        using (SqlCommand myCommand = new SqlCommand(query2, myCon))
-                        {
-                            myReader = myCommand.ExecuteReader();
-                            table.Load(myReader);
-                            myReader.Close();
-                        }
-                        int IDKyThu = int.Parse(table.Rows[0][0].ToString());
+                        Console.WriteLine("Tạo hoá đơn");
                         for (int i = 0; i < table2.Rows.Count; i++)
                         {
-                            string getIDPhieuQuery = "select IDENT_CURRENT('PhieuThu') + 1";
-                            string maSoPhieu = "PT";
+                            string getIDPhieuQuery = "select max(IDHoaDon) + 1 from HoaDon";
+                            string maSoPhieu = "HD";
                             DataTable tableID = new DataTable();
                             using (SqlCommand myCommand = new SqlCommand(getIDPhieuQuery, myCon))
                             {
@@ -286,13 +298,14 @@ namespace ServerAPI.Controllers
                             string IDPhieu = tableID.Rows[0][0].ToString();
                             int IDKH = int.Parse(table2.Rows[i][0].ToString());
                             int IDTuyen = int.Parse(table2.Rows[i][1].ToString());
-                            
+                            int giaTien = int.Parse(table2.Rows[i][3].ToString());
+
                             int IDMauSoPhieu = int.Parse(table2.Rows[i][2].ToString());
                             maSoPhieu = String.Concat(maSoPhieu, IDPhieu,
                                 "MKH", IDKH, "D", DateTime.Today.ToString("ddMMyyyy"));
-                            string query4 = @"insert into PhieuThu values (" + IDKH + @"," + IDTuyen + @",
-
-                                " + IDKyThu + @",null,'"+ maSoPhieu + @"','" + IDMauSoPhieu + @"',GETDATE(),null)";
+                            string query4 = @"insert into HoaDon values (" + IDPhieu + ","
+                                + IDKH + @"," + IDKyThuInsert + @",'" + maSoPhieu +
+                                @"',GETDATE(),null," + giaTien + ")";
 
                             using (SqlCommand myCommand = new SqlCommand(query4, myCon))
                             {
@@ -304,6 +317,18 @@ namespace ServerAPI.Controllers
                     }
                     else
                     {
+                        string queryGetIDKyThu = @"Select max(IDKyThu) + 1 from KyThu";
+                        DataTable tblGetIDKyThu = new DataTable();
+                        using (SqlCommand myCommand = new SqlCommand(queryGetIDKyThu, myCon))
+                        {
+                            myReader = myCommand.ExecuteReader();
+                            tblGetIDKyThu.Load(myReader);
+                            myReader.Close();
+                        }
+                        string IDKyThuInsert = tblGetIDKyThu.Rows[0][0].ToString();
+                        string query = @"insert into dbo.KyThu values(" + IDKyThuInsert +
+                            ",N'Kỳ thu tháng " + kt.Thang + " năm " + kt.Nam +
+                            "','" + kt.Thang + "','" + kt.Nam + "', SYSDATETIME())";
                         using (SqlCommand myCommand = new SqlCommand(query, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
@@ -324,7 +349,7 @@ namespace ServerAPI.Controllers
         [HttpPut()]
         public JsonResult Put(KyThu kt)
         {
-            string queryCheck = "Select * from dbo.KyThu where Thang = " + kt.Thang + @" and Nam =" + kt.Nam;
+            string queryCheckExist = "Select * from dbo.KyThu where Thang = " + kt.Thang + @" and Nam =" + kt.Nam;
             DataTable dt = new DataTable();
             string query = @"update dbo.KyThu set TenKyThu = N'Kỳ thu tháng " + kt.Thang + @" năm " + kt.Nam + @"',
                 Thang = " + kt.Thang + @", Nam = " + kt.Nam + @" where idKyThu = " + kt.IDKyThu;
@@ -334,7 +359,7 @@ namespace ServerAPI.Controllers
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
-                using (SqlCommand myCommand = new SqlCommand(queryCheck, myCon))
+                using (SqlCommand myCommand = new SqlCommand(queryCheckExist, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
                     dt.Load(myReader);
@@ -352,17 +377,39 @@ namespace ServerAPI.Controllers
                 }
                 else
                 {
-                    using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                    string queryCheckHoaDon = @"select * from HoaDon where IDkyThu = " + kt.IDKyThu +
+                        " and NgayThu is not null";
+                    DataTable tblCheckHoaDon = new DataTable();
+                    using (SqlCommand myCommand = new SqlCommand(queryCheckHoaDon, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
+                        tblCheckHoaDon.Load(myReader);
                         myReader.Close();
+                    }
+                    if (tblCheckHoaDon.Rows.Count > 0)
+                    {
                         myCon.Close();
                         return new JsonResult(new
                         {
-                            severity = "success",
-                            message = "Cập nhật thông tin kỳ thu thành công"
+                            severity = "warning",
+                            message = "Không thể chỉnh sửa thông tin. Tồn tại hoá đơn của kỳ này đã được thanh toán"
                         }
                         );
+                    }
+                    else
+                    {
+                        using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                        {
+                            myReader = myCommand.ExecuteReader();
+                            myReader.Close();
+                            myCon.Close();
+                            return new JsonResult(new
+                            {
+                                severity = "success",
+                                message = "Cập nhật thông tin kỳ thu thành công"
+                            }
+                            );
+                        }
                     }
                 }
             }
@@ -372,7 +419,7 @@ namespace ServerAPI.Controllers
         public JsonResult Delete(int id)
         {
             string query = @"delete from dbo.KyThu where IDKyThu = " + id;
-            string query2 = @"Select * from dbo.PhieuThu where NgayThu IS NOT NULL and IDKyThu = " + id;
+            string query2 = @"Select * from dbo.HoaDon where NgayThu IS NOT NULL and IDKyThu = " + id;
             DataTable dataTable = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
             SqlDataReader myReader;
@@ -389,13 +436,13 @@ namespace ServerAPI.Controllers
                         return new JsonResult(new
                         {
                             severity = "warning",
-                            message = "Tồn tại phiếu thu đã được thu trong kỳ thu này.Không thể xoá kỳ thu"
+                            message = "Tồn tại hoá đơn đã được thu trong kỳ thu này.Không thể xoá kỳ thu"
                         }
                         );
                     }
                     else
                     {
-                        string query3 = "Delete from dbo.PhieuThu where IDKyThu = " + id;
+                        string query3 = "Delete from dbo.HoaDon where IDKyThu = " + id;
                         using (SqlCommand delPhieuThuCommand = new SqlCommand(query3, myCon))
                         {
                             myReader = delPhieuThuCommand.ExecuteReader();

@@ -100,6 +100,33 @@ namespace ServerAPI.Controllers
             return new JsonResult(table);
         }
 
+        [HttpGet("tuyenthu/{idTuyenThu}")]
+        public JsonResult GetByTuyenThu(int idTuyenThu)
+        {
+            string query = @"
+                select XaPhuong.IDXaPhuong, XaPhuong.TenXaPhuong, XaPhuong.IDQuanHuyen from XaPhuong
+                    join ThuocTuyen on ThuocTuyen.IDXaPhuong = XaPhuong.IDXaPhuong 
+                    where IDTuyenThu = " + idTuyenThu;
+            DataTable table = new DataTable();
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            myReader.Close();
+
+            return new JsonResult(table);
+        }
+
         [HttpGet("getbyidemp/{idNhanVien}")]
         public JsonResult GetByStatus(int idNhanVien)
         {

@@ -137,7 +137,47 @@ namespace ServerAPI.Controllers
             return new JsonResult(table);
         }
 
-        
+        [HttpGet("quanhuyen/{idQuanHuyen}")]
+        public JsonResult GetByQuanHuyen(int idQuanHuyen)
+        {
+            string selectString = @"
+                select KhachHang.IDKhachHang, KhachHang.HoTenKH
+                from KhachHang
+                inner join XaPhuong
+                on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                inner join QuanHuyen
+                on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen ";
+            string whereString = " where QuanHuyen.IDQuanHuyen = " + idQuanHuyen;
+            string orderString = " order by KhachHang.TrangThai desc";
+            string query = "";
+            if(idQuanHuyen == -1)
+            {
+                query = String.Concat(selectString, orderString);
+            }
+            else
+            {
+                query = String.Concat(selectString, whereString, orderString);
+            }
+            DataTable table = new DataTable();
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            myReader.Close();
+
+            return new JsonResult(table);
+        }
 
         [HttpPost]
         public JsonResult Post(KhachHang kh)

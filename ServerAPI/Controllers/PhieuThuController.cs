@@ -55,6 +55,150 @@ namespace ServerAPI.Controllers
 
             return new JsonResult(table);
         }
+
+        [HttpGet("{idQuanHuyen}/{idTuyenThu}/{idXaPhuong}/{idKhachHang}/{idLoaiKhachHang}/{idNhanVien}/{idTrangThai}")]
+        public JsonResult GetByConditions(int idQuanHuyen, int idTuyenThu, 
+            int idXaPhuong, int idKhachHang, int idLoaiKhachHang, int idNhanVien, int idTrangThai)
+        {
+            string selectString = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,TuyenThu.MaTuyenThu,
+                TuyenThu.IDTuyenThu,TuyenThu.TenTuyenThu,KyThu.IDKyThu,KyThu.TenKyThu, KyThu.Thang,
+	            KyThu.Thang,KyThu.Nam,NhanVien.MaNhanVien,NhanVien.IDNhanVien,NhanVien.HoTen,HoaDon.NgayTao,
+                HoaDon.NgayThu, XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
+                QuanHuyen.TenQuanHuyen,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia
+                from HoaDon
+                inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+				full outer join HDThanhToanTrucTiep on HDThanhToanTrucTiep.IDHoaDon = HoaDon.IDHoaDon
+                FULL OUTER join TuyenThu on HDThanhToanTrucTiep.IDTuyenThu = TuyenThu.IDTuyenThu
+                inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
+                FULL OUTER join NhanVien on HDThanhToanTrucTiep.IDNhanVien = NhanVien.IDNhanVien
+                inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+                inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang ";
+            string whereString = "";
+            bool isFirstCondition = true;
+            string orderString = " order by KhachHang.IDKhachHang,KyThu.Thang ASC ";
+            string query = "";
+
+            if(idQuanHuyen != -1)
+            {
+                if(isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where QuanHuyen.IDQuanHuyen = ", idQuanHuyen);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND QuanHuyen.IDQuanHuyen = ", idQuanHuyen);
+                }
+            }
+            if (idTuyenThu != -1)
+            {
+                if (isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where TuyenThu.IDTuyenThu = ", idTuyenThu);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND TuyenThu.IDTuyenThu = ", idTuyenThu);
+                }
+            }
+            if (idXaPhuong != -1)
+            {
+                if (isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where XaPhuong.IDXaPhuong = ", idXaPhuong);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND XaPhuong.IDXaPhuong = ", idXaPhuong);
+                }
+            }
+            if (idKhachHang != -1)
+            {
+                if (isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where KhachHang.IDKhachHang = ", idKhachHang);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND KhachHang.IDKhachHang = ", idKhachHang);
+                }
+            }
+            if (idLoaiKhachHang != -1)
+            {
+                if (isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where LoaiKhachHang.IDLoaiKhachHang = ", idLoaiKhachHang);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND LoaiKhachHang.IDLoaiKhachHang = ", idLoaiKhachHang);
+                }
+            }
+            if (idNhanVien != -1)
+            {
+                if (isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where NhanVien.IDNhanVien = ", idNhanVien);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND NhanVien.IDNhanVien = ", idNhanVien);
+                }
+            }
+            if (idTrangThai != -1)
+            {
+                string statusNgayThu = "";
+
+                //Đã thu
+                if(idTrangThai == 1)
+                {
+                    statusNgayThu = " not null";
+                }
+
+                //Chưa thu
+                if(idTrangThai == 2)
+                {
+                    statusNgayThu = " null";
+                }
+
+                if (isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where NgayThu is ", statusNgayThu);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND NgayThu is ", statusNgayThu);
+                }
+            }
+
+            query = string.Concat(selectString, whereString, orderString);
+            DataTable table = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            return new JsonResult(table);
+        }
+
         //get Phieu theo NV
         [HttpGet("nhanvien/{idNV}")]
         public JsonResult GetPhieuNV(int idNV)
@@ -386,7 +530,9 @@ namespace ServerAPI.Controllers
         public JsonResult GetInfoKHByID(int id)
         {
             string query = @"select Diachi, IDTuyenThu 
-                from dbo.KhachHang inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                from dbo.KhachHang 
+                inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                inner join ThuocTuyen on ThuocTuyen.IDXaPhuong = XaPhuong.IDXaPhuong
                 where IDKhachHang =" + id;
             DataTable table = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
@@ -410,7 +556,7 @@ namespace ServerAPI.Controllers
         [HttpPost]
         public JsonResult Post(PhieuThu pt)
         {
-            string checkPhieuThu = @"Select * from PhieuThu where IDKhachHang = " + pt.IDKhachHang +
+            string checkPhieuThu = @"Select * from HoaDon where IDKhachHang = " + pt.IDKhachHang +
                 @" and IDKyThu = " + pt.IDKyThu;
             DataTable tableCheckPhieuThu = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
@@ -431,32 +577,32 @@ namespace ServerAPI.Controllers
                 }
                 else
                 {
-                    string getMaxIDPhieuQuery = "select IDENT_CURRENT('PhieuThu') + 1";
-                    string getIDLoaiKhachHang = "select IDLoaiKhachHang from KhachHang " +
-                        "where IDKhachHang = " + pt.IDKhachHang;
+                    string getMaxIDPhieuQuery = "select max(IDHoaDon) + 1 from HoaDon";
+                    string getGiaTien = @"select Gia from KhachHang
+                        join LoaiKhachHang on LoaiKhachHang.IDLoaiKhachHang = KhachHang.IDLoaiKhachHang
+                        where IDKhachHang = " + pt.IDKhachHang;
                     string maxIDPhieu = "";
-                    int IDLoaiKH = 0;
+                    int gia = 0;
                     DataTable dt = new DataTable();
-                    DataTable dtIDLoai = new DataTable();
+                    DataTable dtGia = new DataTable();
                     using (SqlCommand myCommand = new SqlCommand(getMaxIDPhieuQuery, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
                         dt.Load(myReader);
                         myReader.Close();
                     }
-                    using (SqlCommand myCommand = new SqlCommand(getIDLoaiKhachHang, myCon))
+                    using (SqlCommand myCommand = new SqlCommand(getGiaTien, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
-                        dtIDLoai.Load(myReader);
+                        dtGia.Load(myReader);
                         myReader.Close();
                     }
 
                     maxIDPhieu = dt.Rows[0][0].ToString();
-                    IDLoaiKH = int.Parse(dtIDLoai.Rows[0][0].ToString());
+                    gia = int.Parse(dtGia.Rows[0][0].ToString());
                     string maSoPhieu = "PT" + maxIDPhieu + "MKH" + pt.IDKhachHang + "D" + DateTime.Today.ToString("ddMMyyyy");
-                    string query = @"insert into PhieuThu values (" + pt.IDKhachHang + @",
-                        " + pt.IDTuyenThu + @"," + pt.IDKyThu + @",null,
-                        '" + maSoPhieu + @"','" + IDLoaiKH + @"',GETDATE(),null)";
+                    string query = @"insert into HoaDon values ("+ maxIDPhieu + "," + pt.IDKhachHang + "," 
+                        + pt.IDKyThu + @",'" + maSoPhieu + @"',GETDATE(),null," + gia + ")";
                     using (SqlCommand myCommand = new SqlCommand(query, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
@@ -471,26 +617,46 @@ namespace ServerAPI.Controllers
         [HttpDelete("{id}")]
         public JsonResult Delete(int id)
         {
-            string query = @"
-                DELETE FROM PhieuThu 
-                WHERE IDPhieu = '" + id + @"'
-                ";
+            string queryCheck = @"select * from HoaDon where NgayThu is not null and IDHoaDon = " + id;
+            string queryDel = @" DELETE FROM HoaDon WHERE IDHoaDon = " + id;
             DataTable table = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
             SqlDataReader myReader;
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
-                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                using (SqlCommand myCommand = new SqlCommand(queryCheck, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
                     table.Load(myReader);
-
                     myReader.Close();
+                }
+                if(table.Rows.Count > 0)
+                {
                     myCon.Close();
+                    return new JsonResult(new
+                    {
+                        severity = "warning",
+                        message = "Không thể xoá hoá đơn đã thanh toán"
+                    }
+                    );
+                }
+                else
+                {
+                    using (SqlCommand myCommand = new SqlCommand(queryDel, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
+                        myReader.Close();
+                        myCon.Close();
+                    }
+                    return new JsonResult(new
+                    {
+                        severity = "success",
+                        message = "Xoá hoá đơn thành công"
+                    }
+                    );
                 }
             }
-            return new JsonResult("Deleted Successfully");
         }
         //Put
         [HttpPut]
