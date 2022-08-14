@@ -56,25 +56,251 @@ namespace ServerAPI.Controllers
             return new JsonResult(table);
         }
 
-        [HttpGet("{idQuanHuyen}/{idTuyenThu}/{idXaPhuong}/{idKhachHang}/{idLoaiKhachHang}/{idNhanVien}/{idTrangThai}")]
-        public JsonResult GetByConditions(int idQuanHuyen, int idTuyenThu, 
-            int idXaPhuong, int idKhachHang, int idLoaiKhachHang, int idNhanVien, int idTrangThai)
+        [HttpGet("info/{idHD}")]
+        public JsonResult GetInfoByID(int idHD)
         {
-            string selectString = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
-                KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,TuyenThu.MaTuyenThu,
-                TuyenThu.IDTuyenThu,TuyenThu.TenTuyenThu,KyThu.IDKyThu,KyThu.TenKyThu, KyThu.Thang,
-	            KyThu.Thang,KyThu.Nam,NhanVien.MaNhanVien,NhanVien.IDNhanVien,NhanVien.HoTen,HoaDon.NgayTao,
-                HoaDon.NgayThu, XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
-                QuanHuyen.TenQuanHuyen,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia
-                from HoaDon
+            string queryCheckDaThu = @"Select * from HoaDon where NgayThu is not null and IDHoaDon = " + idHD;
+            DataTable tblCheckNgayThu = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryCheckDaThu, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblCheckNgayThu.Load(myReader);
+
+                    myReader.Close();
+                    //myCon.Close();
+                }
+                if (tblCheckNgayThu.Rows.Count > 0)
+                {
+                    //Hoá đơn đã thu
+                    string queryCheckHinhThuc = "Select * from HDThanhToanTrucTiep where IDHoaDon = " + idHD;
+                    DataTable tableCheckHinhThuc = new DataTable();
+                    using (SqlCommand myCommand = new SqlCommand(queryCheckHinhThuc, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
+                        tableCheckHinhThuc.Load(myReader);
+
+                        myReader.Close();
+                    }
+                    if(tableCheckHinhThuc.Rows.Count > 0)
+                    {
+                        //Hoá đơn thanh toán trực tiếp
+                        string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                        KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi, 
+                        KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
+                        HoaDon.NgayThu,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia,
+                        TuyenThu.IDTuyenThu, TuyenThu.TenTuyenThu,
+                        NhanVien.IDNhanVien, NhanVien.HoTen, NhanVien.MaNhanVien, NhanVien.SoDienThoai,
+                        QuanHuyen.IDQuanHuyen, QuanHuyen.TenQuanHuyen,
+                        XaPhuong.IDXaPhuong, XaPhuong.TenXaPhuong
+                        from HoaDon 
+                        inner join HDThanhToanTrucTiep on HDThanhToanTrucTiep.IDHoaDon = HoaDon.IDHoaDon
+                        inner join TuyenThu on TuyenThu.IDTuyenThu = HDThanhToanTrucTiep.IDTuyenThu
+                        inner join NhanVien on NhanVien.IDNhanVien = HDThanhToanTrucTiep.IDNhanVien
+                        inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+                        inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
+                        inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang
+                        inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                        inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+                        where HoaDon.IDHoaDon = " + idHD;
+
+                        DataTable tblInfo = new DataTable();
+                        using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                        {
+                            myReader = myCommand.ExecuteReader();
+                            tblInfo.Load(myReader);
+
+                            myReader.Close();
+                            myCon.Close();
+                        }
+                        return new JsonResult(new
+                        {
+                            tinhTrang = "Thanh toán trực tiếp",
+                            info = tblInfo
+                        }
+                        );
+
+                    }
+                    else
+                    {
+                        //Hoá đơn thanh toán online
+                        string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                        KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi, 
+                        KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
+                        HoaDon.NgayThu,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia,
+                        Account.Username, Account.SDT,
+                        QuanHuyen.IDQuanHuyen, QuanHuyen.TenQuanHuyen,
+                        XaPhuong.IDXaPhuong, XaPhuong.TenXaPhuong
+                        from HoaDon 
+                        inner join HDThanhToanOnline on HDThanhToanOnline.IDHoaDon = HoaDon.IDHoaDon
+                        inner join Account on HDThanhToanOnline.IDAccount = Account.IDAccount
+                        inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+                        inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
+                        inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang
+                        inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                        inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+                        where HoaDon.IDHoaDon = " + idHD;
+
+                        DataTable tblInfo = new DataTable();
+                        using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                        {
+                            myReader = myCommand.ExecuteReader();
+                            tblInfo.Load(myReader);
+
+                            myReader.Close();
+                            myCon.Close();
+                        }
+
+                        return new JsonResult(new
+                        {
+                            tinhTrang = "Thanh toán online",
+                            info = tblInfo
+                        }
+                        );
+                    }
+                }
+                else
+                {
+                    //Hoá đơn chưa thu
+                    string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                        KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,
+                        KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
+                        HoaDon.NgayThu,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia,
+                        QuanHuyen.IDQuanHuyen, QuanHuyen.TenQuanHuyen,
+                        XaPhuong.IDXaPhuong, XaPhuong.TenXaPhuong
+                        from HoaDon 
+                        inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+                        inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
+                        inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang
+                        inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                        inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+                        where IDHoaDon = " + idHD;
+                    DataTable tblInfo = new DataTable();
+                    using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
+                        tblInfo.Load(myReader);
+
+                        myReader.Close();
+                        myCon.Close();
+                    }
+                    return new JsonResult(new
+                    {
+                        tinhTrang = "Chưa thu",
+                        info = tblInfo
+                    }
+                    );
+                }
+            }
+
+
+    //        string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+    //            KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,TuyenThu.MaTuyenThu,
+    //            TuyenThu.IDTuyenThu,TuyenThu.TenTuyenThu,KyThu.IDKyThu,KyThu.TenKyThu,
+	   //         KyThu.Thang,KyThu.Nam,NhanVien.MaNhanVien,NhanVien.IDNhanVien,NhanVien.HoTen,HoaDon.NgayTao,
+    //            HoaDon.NgayThu, XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
+    //            QuanHuyen.TenQuanHuyen,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia
+    //            from HoaDon
+    //            inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+				//full outer join HDThanhToanTrucTiep on HDThanhToanTrucTiep.IDHoaDon = HoaDon.IDHoaDon
+    //            FULL OUTER join TuyenThu on HDThanhToanTrucTiep.IDTuyenThu = TuyenThu.IDTuyenThu
+    //            inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
+    //            FULL OUTER join NhanVien on HDThanhToanTrucTiep.IDNhanVien = NhanVien.IDNhanVien
+    //            inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+    //            inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+    //            inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang
+    //               order by KhachHang.IDKhachHang,KyThu.Thang ASC
+    //        ";
+    //        DataTable table = new DataTable();
+    //        string sqlDataSource = _configuration.GetConnectionString("DBCon");
+    //        SqlDataReader myReader;
+    //        using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+    //        {
+    //            myCon.Open();
+    //            using (SqlCommand myCommand = new SqlCommand(query, myCon))
+    //            {
+    //                myReader = myCommand.ExecuteReader();
+    //                table.Load(myReader);
+
+    //                myReader.Close();
+    //                myCon.Close();
+    //            }
+    //        }
+
+    //        return new JsonResult(table);
+        }
+
+        [HttpGet("{idQuanHuyen}/{idTuyenThu}/{idXaPhuong}/{idKyThu}/{idKhachHang}/{idLoaiKhachHang}/{idHinhThuc}/{idNhanVien}/{idTrangThai}")]
+        public JsonResult GetByConditions(int idQuanHuyen, int idTuyenThu, int idXaPhuong,
+            int idKyThu, int idKhachHang, int idLoaiKhachHang, int idHinhThuc, int idNhanVien, int idTrangThai)
+        {
+            string selectFromString = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,
+                KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
+                HoaDon.NgayThu,XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
+                QuanHuyen.TenQuanHuyen,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia 
+                from HoaDon ";
+
+            string joinString = @"
                 inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
-				full outer join HDThanhToanTrucTiep on HDThanhToanTrucTiep.IDHoaDon = HoaDon.IDHoaDon
-                FULL OUTER join TuyenThu on HDThanhToanTrucTiep.IDTuyenThu = TuyenThu.IDTuyenThu
                 inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
-                FULL OUTER join NhanVien on HDThanhToanTrucTiep.IDNhanVien = NhanVien.IDNhanVien
                 inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
                 inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
                 inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang ";
+
+            string selectString = "";
+            if(idHinhThuc == 1)
+            {
+                //Hoa don thanh toan truc tuyen
+                joinString = string.Concat(joinString,
+                    @" inner join HDThanhToanTrucTiep on HDThanhToanTrucTiep.IDHoaDon = HoaDon.IDHoaDon  
+                        inner join NhanVien on NhanVien.IDNhanVien = HDThanhToanTrucTiep.IDNhanVien 
+                        inner join TuyenThu on HDThanhToanTrucTiep.IDTuyenThu = TuyenThu.IDTuyenThu ");
+
+
+             //   selectString = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+             //   KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,TuyenThu.MaTuyenThu,
+             //   TuyenThu.IDTuyenThu,TuyenThu.TenTuyenThu,KyThu.IDKyThu,KyThu.TenKyThu, KyThu.Thang,
+	            //KyThu.Nam,NhanVien.MaNhanVien,NhanVien.IDNhanVien,NhanVien.HoTen,HoaDon.NgayTao,
+             //   HoaDon.NgayThu, XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
+             //   QuanHuyen.TenQuanHuyen,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia
+             //   from HDThanhToanTrucTiep
+             //   inner join HoaDon on HDThanhToanTrucTiep.IDHoaDon = HoaDon.IDHoaDon
+             //   inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+             //   inner join TuyenThu on HDThanhToanTrucTiep.IDTuyenThu = TuyenThu.IDTuyenThu
+             //   inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
+             //   inner join NhanVien on HDThanhToanTrucTiep.IDNhanVien = NhanVien.IDNhanVien
+             //   inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+             //   inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+             //   inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang ";
+            }
+
+            if(idHinhThuc == 2)
+            {
+                //Cac hoa don thanh toan online
+                joinString = string.Concat(joinString, " inner join HDThanhToanOnline on " +
+                    "HDThanhToanOnline.IDHoaDon = HoaDon.IDHoaDon ");
+
+                //        selectString = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                //            KhachHang.IDKhachHang,KhachHang.HoTenKH,KhachHang.DiaChi,KyThu.IDKyThu,KyThu.TenKyThu,
+                //         KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,HoaDon.NgayThu, Account.Username, Account.SDT,
+                //            XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
+                //            QuanHuyen.TenQuanHuyen,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia
+                //            from HoaDon
+                //            inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+                //full outer join HDThanhToanOnline on HDThanhToanOnline.IDHoaDon = HoaDon.IDHoaDon
+                //            full outer join Account on HDThanhToanOnline.IDAccount = Account.IDAccount
+                //            inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
+                //            inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                //            inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+                //            inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang ";
+            }
+            selectString = string.Concat(selectFromString, joinString);
+            
             string whereString = "";
             bool isFirstCondition = true;
             string orderString = " order by KhachHang.IDKhachHang,KyThu.Thang ASC ";
@@ -116,6 +342,18 @@ namespace ServerAPI.Controllers
                     whereString = string.Concat(whereString, " AND XaPhuong.IDXaPhuong = ", idXaPhuong);
                 }
             }
+            if (idKyThu != -1)
+            {
+                if (isFirstCondition)
+                {
+                    whereString = string.Concat(whereString, " where KyThu.IDKyThu = ", idKyThu);
+                    isFirstCondition = false;
+                }
+                else
+                {
+                    whereString = string.Concat(whereString, " AND KyThu.IDKyThu = ", idKyThu);
+                }
+            }
             if (idKhachHang != -1)
             {
                 if (isFirstCondition)
@@ -140,16 +378,20 @@ namespace ServerAPI.Controllers
                     whereString = string.Concat(whereString, " AND LoaiKhachHang.IDLoaiKhachHang = ", idLoaiKhachHang);
                 }
             }
-            if (idNhanVien != -1)
+            if(idHinhThuc != 2)
             {
-                if (isFirstCondition)
+                //Khong phai hinh thuc thanh toan online thì duyệt where của idNhanVien
+                if (idNhanVien != -1)
                 {
-                    whereString = string.Concat(whereString, " where NhanVien.IDNhanVien = ", idNhanVien);
-                    isFirstCondition = false;
-                }
-                else
-                {
-                    whereString = string.Concat(whereString, " AND NhanVien.IDNhanVien = ", idNhanVien);
+                    if (isFirstCondition)
+                    {
+                        whereString = string.Concat(whereString, " where NhanVien.IDNhanVien = ", idNhanVien);
+                        isFirstCondition = false;
+                    }
+                    else
+                    {
+                        whereString = string.Concat(whereString, " AND NhanVien.IDNhanVien = ", idNhanVien);
+                    }
                 }
             }
             if (idTrangThai != -1)
@@ -183,9 +425,11 @@ namespace ServerAPI.Controllers
             DataTable table = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
             SqlDataReader myReader;
+
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
+                Console.WriteLine(query);
                 using (SqlCommand myCommand = new SqlCommand(query, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
