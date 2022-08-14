@@ -112,7 +112,7 @@ namespace ServerAPI.Controllers
                     convert(varchar, NgayBatDau, 103) as NgayBatDau, 
                     convert(varchar, NgayKetThuc, 103) as NgayKetThuc
                 from dbo.TuyenThu 
-                join dbo.ThuocTuyen on TuyenThu.IDTuyenThu = ThuocTuyen.IDTuyenThu
+                full outer join dbo.ThuocTuyen on TuyenThu.IDTuyenThu = ThuocTuyen.IDTuyenThu
                 full outer join dbo.XaPhuong on ThuocTuyen.IDXaPhuong = XaPhuong.IDXaPhuong
                 full outer join dbo.PhanTuyen on TuyenThu.IDTuyenThu = PhanTuyen.IDTuyenThu 
 	            full outer join dbo.QuanHuyen on QuanHuyen.IDQuanHuyen = PhanTuyen.IDQuanHuyen 
@@ -388,24 +388,33 @@ namespace ServerAPI.Controllers
                         myReader.Close();
                     }
 
-                    //Update IDTuyenThu trong dbo.XaPhuong
-                    string queryUpdate = @"Update ThuocTuyen set IDTuyenThu = " + IDTuyenThu + @" where IDXaPhuong in (
-		                select IDXaPhuong from XaPhuong where (
-	                ";
-                    string queryUpdateXP = string.Concat(queryUpdate, whereString, ")");
-                    Console.WriteLine(queryUpdateXP);
-                    using (SqlCommand myCommand = new SqlCommand(queryUpdateXP, myCon))
+                    //Insert IDXaPhuong va IDTuyen thu vao trong dbo.ThuocTuyen
+                    string queryInsert = "Insert into ThuocTuyen values(" + IDTuyenThu + ",";
+                    string getIDXaPhuong = @"select IDXaPhuong from XaPhuong where ( " + whereString;
+                    DataTable tblIDXaPhuong = new DataTable();
+                    using (SqlCommand myCommand = new SqlCommand(getIDXaPhuong, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
+                        tblIDXaPhuong.Load(myReader);
                         myReader.Close();
-                        myCon.Close();
-                        return new JsonResult(new
-                        {
-                            severity = "success",
-                            message = "Thêm tuyến thu thành công"
-                        }
-                        );
                     }
+                    for(int i=0; i< tblIDXaPhuong.Rows.Count; i++)
+                    {
+                        string IDXaPhuong = tblIDXaPhuong.Rows[i][0].ToString();
+                        string queryInsertThuocTuyen = queryInsert + IDXaPhuong + ")";
+                        using (SqlCommand myCommand = new SqlCommand(queryInsertThuocTuyen, myCon))
+                        {
+                            myReader = myCommand.ExecuteReader();
+                            myReader.Close();
+                        }
+                    }
+                    myCon.Close();
+                    return new JsonResult(new
+                    {
+                        severity = "success",
+                        message = "Thêm tuyến thu thành công"
+                    }
+                    );
                 }
             }
         }
@@ -535,25 +544,13 @@ namespace ServerAPI.Controllers
                         );
                     }
                     else
-                    {                        
-                        string queryGetXaPhuong = "select IDXaPhuong from XaPhuong where IDTuyenThu = " + id;
-                        DataTable tableXaPhuong = new DataTable();
-                        using (SqlCommand getXaPhuongCMD = new SqlCommand(queryGetXaPhuong, myCon))
+                    {    
+                        //Delete thuoc tuyen ( Giai phong XaPhuong khoi tuyen thu )
+                        string queryDeleteTuyenXaPhuong = "delete from ThuocTuyen where IDTuyenThu = " + id;
+                        using (SqlCommand getXaPhuongCMD = new SqlCommand(queryDeleteTuyenXaPhuong, myCon))
                         {
                             myReader = getXaPhuongCMD.ExecuteReader();
-                            tableXaPhuong.Load(myReader);
                             myReader.Close();
-                        }
-                        for(int i = 0; i < tableXaPhuong.Rows.Count; i++)
-                        {
-                            int idXaPhuong = int.Parse(tableXaPhuong.Rows[i][0].ToString());
-                            string querySetXaPhuong = "Update XaPhuong set IDTuyenThu = null " +
-                                @"where IDXaPhuong =  " + idXaPhuong;
-                            using (SqlCommand setXaPhuongCommand = new SqlCommand(querySetXaPhuong, myCon))
-                            {
-                                myReader = setXaPhuongCommand.ExecuteReader();
-                                myReader.Close();
-                            }
                         }
 
                         string queryCheckExist = "Select * from dbo.PhanTuyen where IDTuyenThu = " + id;
@@ -566,9 +563,10 @@ namespace ServerAPI.Controllers
                         }
                         if(dt.Rows.Count > 0)
                         {
+                            //Ket thuc tuyen thu
                             string query = @"Update dbo.PhanTuyen 
-                            set NgayKetThuc = convert(varchar, SYSDATETIME(), 23) 
-                            where IDTuyenThu = " + id;
+                                set NgayKetThuc = convert(varchar, SYSDATETIME(), 23) 
+                                where IDTuyenThu = " + id;
                             using (SqlCommand delTuyenThuCommand = new SqlCommand(query, myCon))
                             {
                                 myReader = delTuyenThuCommand.ExecuteReader();
@@ -584,7 +582,7 @@ namespace ServerAPI.Controllers
                         }
                         else
                         {
-                            string queryCheckPhieuThu = "Select * from PhieuThu where IDTuyenThu = " + id;
+                            string queryCheckPhieuThu = "Select * from HDThanhToanTrucTiep where IDTuyenThu = " + id;
                             DataTable tableCheckPhieuThu = new DataTable();
                             using (SqlCommand checkPhieuThuCommand = new SqlCommand(queryCheckPhieuThu, myCon))
                             {
@@ -599,7 +597,7 @@ namespace ServerAPI.Controllers
                                 return new JsonResult(new
                                 {
                                     severity = "warning",
-                                    message = "Không thể xoá tuyến thu vì tồn tại phiếu thu. Hãy xoá phiếu thu trước"
+                                    message = "Không thể xoá tuyến thu vì tồn tại hoá đơn đã thanh toán thuộc tuyến này."
                                 }
                                 );
                             }
