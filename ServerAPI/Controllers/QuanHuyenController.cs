@@ -105,10 +105,6 @@ namespace ServerAPI.Controllers
         [HttpPost]
         public JsonResult Post(QuanHuyen qh)
         {
-            string
-                query = @"insert into QuanHuyen values(N'" + qh.TenQuanHuyen + "');";
-
-            DataTable table = new DataTable();
 
             string checkQuery = @"select * from QuanHuyen where TenQuanHuyen like N'" + qh.TenQuanHuyen + "'";
 
@@ -129,10 +125,21 @@ namespace ServerAPI.Controllers
 
                 if (checkDistrict.Rows.Count == 0)
                 {
-                    using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                    string queryGetIDQuanHuyen = "Select max(IDQuanHuyen) + 1 from QuanHuyen";
+                    DataTable tblIDQuanHuyen = new DataTable();
+                    using (SqlCommand myCommand = new SqlCommand(queryGetIDQuanHuyen, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
-                        table.Load(myReader);
+                        tblIDQuanHuyen.Load(myReader);
+                        myReader.Close();
+                    }
+                    string IDQH = tblIDQuanHuyen.Rows[0][0].ToString();
+
+                    string queryInsert = @"insert into QuanHuyen values
+                        (" + IDQH + ",N'" + qh.TenQuanHuyen + "');";
+                    using (SqlCommand myCommand = new SqlCommand(queryInsert, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
 
                         myReader.Close();
                         myCon.Close();

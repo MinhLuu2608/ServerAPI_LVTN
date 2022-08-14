@@ -159,23 +159,14 @@ namespace ServerAPI.Controllers
         [HttpPost]
         public JsonResult Post(XaPhuong xp)
         {
-            string
-                query = @"insert into XaPhuong values(N'" + xp.TenXaPhuong + "'," + xp.IDQuanHuyen + ",null);";
-            DataTable table = new DataTable();
-
-            string checkQuery = @"select * from XaPhuong where TenXaPhuong like N'" + xp.TenXaPhuong + "' and IDQuanHuyen = " + xp.IDQuanHuyen;
-
+            string checkQuery = @"select * from XaPhuong 
+                where TenXaPhuong like N'" + xp.TenXaPhuong + "' and IDQuanHuyen = " + xp.IDQuanHuyen;
             DataTable checkWard = new DataTable();
-
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
             SqlDataReader myReader;
-
-
-
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
-
                 using (SqlCommand myCommand = new SqlCommand(checkQuery, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
@@ -185,10 +176,20 @@ namespace ServerAPI.Controllers
 
                 if (checkWard.Rows.Count == 0)
                 {
-                    using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                    string queryGetIDXP = "Select max(IDXaPhuong) + 1 from XaPhuong";
+                    DataTable tblIDXP = new DataTable();
+                    using (SqlCommand myCommand = new SqlCommand(queryGetIDXP, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
-                        table.Load(myReader);
+                        tblIDXP.Load(myReader);
+                        myReader.Close();
+                    }
+                    string IDXP = tblIDXP.Rows[0][0].ToString();
+                    string queryInsert = @"insert into XaPhuong values
+                        (" + IDXP + ",N'" + xp.TenXaPhuong + "'," + xp.IDQuanHuyen + ");";
+                    using (SqlCommand myCommand = new SqlCommand(queryInsert, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
                         myReader.Close();
                         myCon.Close();
                         return new JsonResult(new
@@ -206,10 +207,7 @@ namespace ServerAPI.Controllers
                         message = "Tên Xã Phường Trong Quận Huyện Đã Tồn Tại"
                     });
                 }
-
             }
-
-
         }
 
         [HttpDelete("{idXaPhuong}")]
