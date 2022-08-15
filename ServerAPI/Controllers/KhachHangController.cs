@@ -20,7 +20,7 @@ namespace ServerAPI.Controllers
         public JsonResult Get()
         {
             string query = @"
-                select KhachHang.IDKhachHang, KhachHang.HoTenKH, KhachHang.MaKhachHang, KhachHang.CCCD, KhachHang.NgayTao,
+                select KhachHang.IDKhachHang, KhachHang.HoTenKH, KhachHang.MaKhachHang, KhachHang.CCCD, KhachHang.NgayTao, KhachHang.NgayKetThuc,
 					KhachHang.DiaChi, KhachHang.IDXaPhuong, XaPhuong.TenXaPhuong, XaPhuong.IDQuanHuyen, QuanHuyen.TenQuanHuyen,
                     KhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai, KhachHang.TrangThai, PhanTuyen.IDNhanVien, ThuocTuyen.IDTuyenThu
                 from KhachHang
@@ -30,7 +30,7 @@ namespace ServerAPI.Controllers
 				JOIN ThuocTuyen on XaPhuong.IDXaPhuong = ThuocTuyen.IDXaPhuong
 				JOIN TuyenThu on TuyenThu.IDTuyenThu = ThuocTuyen.IDTuyenThu
 				left OUTER JOIN PhanTuyen on PhanTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
-				order by KhachHang.TrangThai desc
+				order by KhachHang.IDKhachHang, KhachHang.TrangThai desc
             ";
             DataTable table = new DataTable();
             
@@ -52,6 +52,48 @@ namespace ServerAPI.Controllers
             myReader.Close();
 
             return new JsonResult(table);
+        }
+
+        [HttpGet("accountLinked/{idKH}")]
+        public JsonResult GetAccountLinkedByIDKH(int idKH)
+        {
+            string query = @"Select Username from Account join LienKetTK on LienKetTK.IDAccount = Account.IDAccount
+                where IDKhachHang = " + idKH;
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            if(table.Rows.Count > 0)
+            {
+                string accountLinkedString = "";
+                for(int i=0; i< table.Rows.Count; i++)
+                {
+                    if(i != (table.Rows.Count - 1))
+                        accountLinkedString = string.Concat(accountLinkedString, table.Rows[i][0].ToString(), " || ");
+                    else
+                        accountLinkedString = string.Concat(accountLinkedString, table.Rows[i][0].ToString());
+                }
+                return new JsonResult(accountLinkedString);
+            }
+            else
+            {
+                return new JsonResult("Chưa có tài khoản liên kết với ID khách hàng này");
+            }
+
         }
 
         [HttpGet("getCustomerNoRoute")]
@@ -98,8 +140,8 @@ namespace ServerAPI.Controllers
         public JsonResult GetByStatus(int idNhanVien)
         {
             string query = @"
-                select KhachHang.IDKhachHang, KhachHang.HoTenKH, KhachHang.MaKhachHang, KhachHang.CCCD, KhachHang.NgayCap, KhachHang.NgayTao, 
-                    KhachHang.NgayChinhSua,KhachHang.DiaChi, KhachHang.IDXaPhuong, XaPhuong.TenXaPhuong, XaPhuong.IDQuanHuyen, QuanHuyen.TenQuanHuyen,
+                select KhachHang.IDKhachHang, KhachHang.HoTenKH, KhachHang.MaKhachHang, KhachHang.CCCD, KhachHang.NgayTao, 
+                    KhachHang.DiaChi, KhachHang.IDXaPhuong, XaPhuong.TenXaPhuong, XaPhuong.IDQuanHuyen, QuanHuyen.TenQuanHuyen,
                     KhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai, KhachHang.TrangThai, PhanTuyen.IDNhanVien, TuyenThu.TenTuyenThu
                 from KhachHang
                 inner join XaPhuong
@@ -108,8 +150,10 @@ namespace ServerAPI.Controllers
                 on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
                 inner join LoaiKhachHang
 				on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang
+                inner join ThuocTuyen 
+				on XaPhuong.IDXaPhuong = ThuocTuyen.IDXaPhuong
 				inner join TuyenThu 
-				on XaPhuong.IDTuyenThu = TuyenThu.IDTuyenThu
+				on ThuocTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
 				inner join PhanTuyen 
 				on PhanTuyen.IDTuyenThu = TuyenThu.IDTuyenThu             
                 where PhanTuyen.IDNhanVien = " + idNhanVien + "and KhachHang.TrangThai = 1" +
@@ -188,9 +232,9 @@ namespace ServerAPI.Controllers
 
             string getIDKyThuQuery = @"select IDKyThu from KyThu where Thang = Month (SYSDATETIME()) and Nam = Year (SYSDATETIME())";
 
-            string getIDQuery = @"SELECT IDENT_CURRENT('KhachHang') + 1";
+            string getIDQuery = @"SELECT max(IDKhachHang) + 1 from KhachHang";
 
-            string getIDTuyenThuQuery = @"select IDTuyenThu from XaPhuong where IDTuyenThu IS NOT NULL and IDXaPhuong = " + kh.IDXaPhuong;
+            string getIDTuyenThuQuery = @"select IDTuyenThu from ThuocTuyen where IDXaPhuong = " + kh.IDXaPhuong;
 
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
 
@@ -253,11 +297,9 @@ namespace ServerAPI.Controllers
                         }
                         maKH = String.Concat(maKH, MaxIDKhachHang);
 
-                        string formattedNgayCap = kh.NgayCap.ToString("yyyy-MM-dd");
-
                         string query = @"insert into dbo.KhachHang values
-                    (" + kh.IDXaPhuong + @"," + kh.IDLoaiKhachHang + @",'" + maKH + @"',N'" + kh.HoTenKH + @"',N'" + kh.DiaChi + @"','" + kh.CCCD + @"','" + formattedNgayCap + @"',GETDATE()"
-                        +@",null,1)";
+                            (" + MaxIDKhachHang + "," + kh.IDXaPhuong + @"," + kh.IDLoaiKhachHang + @",'" + maKH + @"',
+                            N'" + kh.HoTenKH + @"',N'" + kh.DiaChi + @"','" + kh.CCCD + @"',GETDATE(),null,1)";
                         using (SqlCommand myCommand = new SqlCommand(query, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
@@ -349,10 +391,6 @@ namespace ServerAPI.Controllers
 
             DataTable checkCCCD = new DataTable();
              
-           
-
-            string formattedNgayCap = kh.NgayCap.ToString("yyyy-MM-dd");
-
             string query = @"update KhachHang 
                 set IDXaPhuong = '" + kh.IDXaPhuong + "', HoTenKH = N'" + kh.HoTenKH + "'" +
                 ", DiaChi = N'" + kh.DiaChi + "', CCCD = '" + kh.CCCD + "', IDLoaiKhachHang = " + kh.IDLoaiKhachHang  + 
@@ -386,6 +424,7 @@ namespace ServerAPI.Controllers
                 {
                     using (SqlCommand myCommand = new SqlCommand(query, myCon))
                     {
+                        Console.WriteLine(query);
                         myReader = myCommand.ExecuteReader();
                         table.Load(myReader);
 
@@ -472,7 +511,16 @@ namespace ServerAPI.Controllers
         {
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
 
-            string query = @"update KhachHang set TrangThai = "+ status + " where IDKhachHang =" + id;
+            string ngayKetThuc = "";
+
+            if (status == 0)
+            {
+                ngayKetThuc = "sysdatetime()";
+            }
+            else if (status == 1) ngayKetThuc = "null";
+
+            string query = @"update KhachHang set TrangThai = "+ status + 
+                " , NgayKetThuc = " + ngayKetThuc + " where IDKhachHang =" + id;
 
             DataTable table = new DataTable();
 

@@ -132,7 +132,9 @@ namespace ServerAPI.Controllers
         {
             string query = @"
                 select * from XaPhuong
-                inner join PhanTuyen on XaPhuong.IDTuyenThu = PhanTuyen.IDTuyenThu
+                inner join ThuocTuyen on ThuocTuyen.IDXaPhuong = XaPhuong.IDXaPhuong
+                inner join TuyenThu on TuyenThu.IDTuyenThu = ThuocTuyen.IDTuyenThu
+                inner join PhanTuyen on TuyenThu.IDTuyenThu = PhanTuyen.IDTuyenThu
                 where IDNhanVien = " + idNhanVien;
             DataTable table = new DataTable();
 
