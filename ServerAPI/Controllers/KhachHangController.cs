@@ -354,7 +354,9 @@ namespace ServerAPI.Controllers
             string formattedNgayCap = kh.NgayCap.ToString("yyyy-MM-dd");
 
             string query = @"update KhachHang 
-                            set IDXaPhuong = '" + kh.IDXaPhuong + "', HoTenKH = N'" + kh.HoTenKH + "', DiaChi = N'" + kh.DiaChi + "', CCCD = '" + kh.CCCD + "', NgayCap = '" + formattedNgayCap + "', NgayChinhSua = " + "GETDATE()" + ", IDLoaiKhachHang = '" + kh.IDLoaiKhachHang  + "' where IDKhachHang =" + kh.IDKhachHang ;
+                set IDXaPhuong = '" + kh.IDXaPhuong + "', HoTenKH = N'" + kh.HoTenKH + "'" +
+                ", DiaChi = N'" + kh.DiaChi + "', CCCD = '" + kh.CCCD + "', IDLoaiKhachHang = " + kh.IDLoaiKhachHang  + 
+                " where IDKhachHang =" + kh.IDKhachHang ;
             DataTable table = new DataTable();
 
             SqlDataReader myReader;

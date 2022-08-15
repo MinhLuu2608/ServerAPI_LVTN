@@ -303,7 +303,7 @@ namespace ServerAPI.Controllers
             
             string whereString = "";
             bool isFirstCondition = true;
-            string orderString = " order by KhachHang.IDKhachHang,KyThu.Thang ASC ";
+            string orderString = " order by HoaDon.IDHoaDon DESC ";
             string query = "";
 
             if(idQuanHuyen != -1)
