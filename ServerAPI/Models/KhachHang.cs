@@ -10,9 +10,7 @@
         public string HoTenKH { get; set; }
         public string DiaChi { get; set; }
         public string CCCD { get; set; }    
-        public DateTime NgayCap { get; set; }
         public DateTime NgayTao { get; set; }
-        public DateTime? NgayChinhSua { get; set; }
         public int? TrangThai { get; set; }
     }
 }
