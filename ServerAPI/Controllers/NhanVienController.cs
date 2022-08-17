@@ -180,12 +180,7 @@ namespace ServerAPI.Controllers
         public JsonResult Post(NhanVien emp)
         {
             string formattedNgaySinh = emp.NgaySinh.ToString("yyyy-MM-dd");
-            string queryInsertNhanVien = @"
-                INSERT INTO dbo.NhanVien VALUES
-                    (" + emp.IDNhanVien + ",'" + emp.MaNhanVien + "', N'" + emp.HoTen +
-                    "', '" + emp.Email + "', N'" + emp.GioiTinh + "', '" + emp.SoDienThoai + "','"
-                    + formattedNgaySinh + @"', N'" + emp.DiaChi + "', '" + emp.CCCD + "')";
-
+            
             DateTime ngaySinh = emp.NgaySinh;
             int namSinh = int.Parse(ngaySinh.Year.ToString());
             int currentNam = int.Parse(DateTime.Now.Year.ToString());
@@ -274,6 +269,33 @@ namespace ServerAPI.Controllers
                     });
                 }
 
+                string queryGetIDNV = @"SELECT max(IDNhanVien) + 1 as IDNhanVien FROM dbo.NhanVien";
+                DataTable tblGetIDNV = new DataTable();
+                using (SqlCommand myCommand = new SqlCommand(queryGetIDNV, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblGetIDNV.Load(myReader);
+                    myReader.Close();
+                }
+
+                string IDNV = tblGetIDNV.Rows[0][0].ToString();
+
+                // Tạo mã nhân viên
+                int SoMAXIDNV = 4 - IDNV.Length;
+                string maNV = "NV";
+                for(int i=0; i<SoMAXIDNV; i++)
+                {
+                    maNV = string.Concat(maNV, "0");
+                }
+                maNV = string.Concat(maNV, IDNV);
+
+                string queryInsertNhanVien = @"
+                INSERT INTO dbo.NhanVien VALUES
+                    (" + IDNV + ",'" + maNV + "', N'" + emp.HoTen +
+                    "', '" + emp.Email + "', N'" + emp.GioiTinh + "', '" + emp.SoDienThoai + "','"
+                    + formattedNgaySinh + @"', N'" + emp.DiaChi + "', '" + emp.CCCD + "')";
+
+
                 using (SqlCommand myCommand = new SqlCommand(queryInsertNhanVien, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
@@ -301,7 +323,7 @@ namespace ServerAPI.Controllers
                 }
 
                 string queryInsertNhanVienAccount = @"insert into NhanVienAccount values 
-                    (" + IDAccount + ", " + emp.IDNhanVien + ")";
+                    (" + IDAccount + ", " + IDNV + ")";
                 using (SqlCommand myCommand = new SqlCommand(queryInsertNhanVienAccount, myCon))
                 {
                     myReader = myCommand.ExecuteReader();

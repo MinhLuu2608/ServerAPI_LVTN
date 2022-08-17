@@ -2,7 +2,7 @@
 {
     public class NhanVien
     {
-        public int IDNhanVien { get; set; }
+        public int? IDNhanVien { get; set; }
         public string? MaNhanVien { get; set; }
         public string HoTen { get; set; }
         public string Email { get; set; }
