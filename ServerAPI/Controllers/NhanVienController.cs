@@ -73,7 +73,7 @@ namespace ServerAPI.Controllers
         [HttpGet("getlastempid")]
         public JsonResult GetLastEmpID()
         {
-            string query = @"SELECT TOP 1 IDNhanVien FROM dbo.NhanVien ORDER BY IDNhanVien DESC";
+            string query = @"SELECT max(IDNhanVien) + 1 as IDNhanVien FROM dbo.NhanVien";
             DataTable table = new DataTable();
 
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
@@ -152,7 +152,6 @@ namespace ServerAPI.Controllers
             string checkTuyenThuQuery = "Select NgayKetThuc from NhanVien " +
                 "join dbo.PhanTuyen on NhanVien.IDNhanVien = PhanTuyen.IDNhanVien " +
                 "where NgayKetThuc is null and NhanVien.IDNhanVien = " + idNV;
-            Console.WriteLine(checkTuyenThuQuery);
             DataTable dataTable = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
             SqlDataReader myReader;
@@ -199,14 +198,82 @@ namespace ServerAPI.Controllers
                 });
             }
 
-
-
-            DataTable table = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
             SqlDataReader myReader;
+
+            DataTable table = new DataTable();
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
+
+                string queryCheckCCCD = "Select * from NhanVien where CCCD = '" + emp.CCCD + "'";
+                DataTable tblCCCD = new DataTable();
+                using (SqlCommand myCommand = new SqlCommand(queryCheckCCCD, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblCCCD.Load(myReader);
+                    myReader.Close();
+                }
+                if (tblCCCD.Rows.Count > 0)
+                {
+                    return new JsonResult(new
+                    {
+                        severity = "warning",
+                        message = "CCCD đã tồn tại. Hãy kiểm tra lại."
+                    });
+                }
+
+                string queryCheckEmail = "Select * from NhanVien where Email = '" + emp.Email + "'";
+                DataTable tblEmail = new DataTable();
+                using (SqlCommand myCommand = new SqlCommand(queryCheckEmail, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblEmail.Load(myReader);
+                    myReader.Close();
+                }
+                if (tblEmail.Rows.Count > 0)
+                {
+                    return new JsonResult(new
+                    {
+                        severity = "warning",
+                        message = "Email đã tồn tại. Hãy nhập lại."
+                    });
+                }
+
+                string queryCheckSDT = "Select * from NhanVien where SoDienThoai = '" + emp.SoDienThoai + "'";
+                DataTable tblSDT = new DataTable();
+                using (SqlCommand myCommand = new SqlCommand(queryCheckSDT, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblSDT.Load(myReader);
+                    myReader.Close();
+                }
+                if (tblSDT.Rows.Count > 0)
+                {
+                    return new JsonResult(new
+                    {
+                        severity = "warning",
+                        message = "SDT đã tồn tại. Hãy nhập lại."
+                    });
+                }
+
+                string queryCheckUsername = "Select * from Account where Username = '" + emp.TaiKhoan + "'" ;
+                DataTable tblUsername = new DataTable();
+                using (SqlCommand myCommand = new SqlCommand(queryCheckUsername, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblUsername.Load(myReader);
+                    myReader.Close();
+                }
+                if (tblUsername.Rows.Count > 0)
+                {
+                    return new JsonResult(new
+                    {
+                        severity = "warning",
+                        message = "Username đã tồn tại. Hãy nhập lại."
+                    });
+                }
+
                 using (SqlCommand myCommand = new SqlCommand(queryInsertNhanVien, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
@@ -225,7 +292,7 @@ namespace ServerAPI.Controllers
                 string IDAccount = tblGetIDAccount.Rows[0][0].ToString();
 
                 string queryInsertAccount = @"Insert into Account values 
-                    (" + IDAccount + ", '" + emp.TaiKhoan + "', '123456', '" + emp.SoDienThoai +"', anomyous.png)";
+                    (" + IDAccount + ", '" + emp.TaiKhoan + "', '" + emp.MatKhau + "', '" + emp.SoDienThoai + "', '" + emp.ProfilePicture +"')";
 
                 using (SqlCommand myCommand = new SqlCommand(queryInsertAccount, myCon))
                 {
@@ -241,18 +308,14 @@ namespace ServerAPI.Controllers
                     myReader.Close();
                 }
 
-                string queryInsertQuyenNhanVien = @"Insert into PhanQuyen values 
-                    (" + emp.IDNhanVien + ", IDQuyen)";
-                using (SqlCommand myCommand = new SqlCommand(queryInsertQuyenNhanVien, myCon))
-                {
-                    myReader = myCommand.ExecuteReader();
-                    myReader.Close();
-                }
-
                 myCon.Close(); 
             }
 
-            return new JsonResult(table);
+            return new JsonResult(new
+            {
+                severity = "success",
+                message = "Thêm nhân viên thành công"
+            });
         }
         [HttpPut]
         public JsonResult Put(NhanVien emp)
