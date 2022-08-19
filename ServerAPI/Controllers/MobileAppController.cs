@@ -70,7 +70,7 @@ namespace ServerAPI.Controllers
                 }
             }
 
-            return new JsonResult(table.Rows[0][0].ToString());
+            return new JsonResult(int.Parse(table.Rows[0][0].ToString()));
 
         }
 
@@ -134,6 +134,39 @@ namespace ServerAPI.Controllers
                 myCon.Close();
                 return new JsonResult("Đăng ký thành công");
             }
+        }
+
+        [HttpGet("getHoaDon/{IDAccount}/")]
+        public JsonResult getHDToKHByIDAccount(int IDAccount)
+        {
+            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, HoaDon.NgayThu, KyThu.TenKyThu, 
+                Account.IDAccount, KhachHang.HoTenKH, LoaiKhachHang.Gia
+                from HoaDon
+                join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu 
+                join KhachHang on KhachHang.IDKhachHang = HoaDon.IDKhachHang 
+                join LoaiKhachHang on LoaiKhachHang.IDLoaiKhachHang = KhachHang.IDLoaiKhachHang 
+                join LienKetTK on KhachHang.IDKhachHang = LienKetTK.IDKhachHang 
+                join Account on Account.IDAccount = LienKetTK.IDAccount 
+                where Account.IDAccount = " + IDAccount;
+
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetHoaDon, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+
         }
 
         [HttpPost("link")]
