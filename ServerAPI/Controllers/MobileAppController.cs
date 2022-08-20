@@ -136,18 +136,23 @@ namespace ServerAPI.Controllers
             }
         }
 
-        [HttpGet("getHoaDon/{IDAccount}/")]
+        [HttpGet("getHoaDon/{IDAccount}")]
         public JsonResult getHDToKHByIDAccount(int IDAccount)
         {
-            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, HoaDon.NgayThu, KyThu.TenKyThu, 
-                Account.IDAccount, KhachHang.HoTenKH, LoaiKhachHang.Gia
+            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+                format(HoaDon.NgayTao, 'dd/MM/yy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yy') as NgayThu, 
+                KyThu.TenKyThu, KyThu.Thang, Account.IDAccount,
+                KhachHang.MaKhachHang, KhachHang.HoTenKH, LoaiKhachHang.Gia, LoaiKhachHang.TenLoai,
+                CONCAT(Diachi, N', Phường ' , TenXaPhuong, ', ' , TenQuanHuyen) as DiaChiKH
                 from HoaDon
                 join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu 
                 join KhachHang on KhachHang.IDKhachHang = HoaDon.IDKhachHang 
+				join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+				join QuanHuyen on QuanHuyen.IDQuanHuyen = XaPhuong.IDQuanHuyen
                 join LoaiKhachHang on LoaiKhachHang.IDLoaiKhachHang = KhachHang.IDLoaiKhachHang 
                 join LienKetTK on KhachHang.IDKhachHang = LienKetTK.IDKhachHang 
                 join Account on Account.IDAccount = LienKetTK.IDAccount 
-                where Account.IDAccount = " + IDAccount;
+                where Account.IDAccount = " + IDAccount + " order by TenKyThu desc ";
 
             DataTable table = new DataTable();
 
