@@ -230,7 +230,7 @@ namespace ServerAPI.Controllers
 
             string checkQuery = @"select * from KhachHang where CCCD = '" + kh.CCCD + "'";
 
-            string getIDKyThuQuery = @"select IDKyThu from KyThu where Thang = Month (SYSDATETIME()) and Nam = Year (SYSDATETIME())";
+            string getIDKyThuQuery = @"select IDKyThu from KyThu where Thang = Month(SYSDATETIME()) and Nam = Year(SYSDATETIME())";
 
             string getIDQuery = @"SELECT max(IDKhachHang) + 1 from KhachHang";
 
@@ -303,80 +303,71 @@ namespace ServerAPI.Controllers
                         using (SqlCommand myCommand = new SqlCommand(query, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
-                            table.Load(myReader);
                             myReader.Close();
-                                                   
                         }
-                      
-                        using (SqlCommand myCommand = new SqlCommand(getIDKyThuQuery, myCon))
+                        myCon.Close();
+                        return new JsonResult(new
+                        {
+                            severity = "success",
+                            message = "Thêm Khách Hàng Thành Công"
+                        }
+                        );
+                    }
+                    else
+                    {
+                        string queryCheckHoTen = @"select * from KhachHang where CCCD = '" + kh.CCCD + 
+                            "' and HoTenKH = N'" + kh.HoTenKH + "'";
+                        DataTable checkHoTen = new DataTable();
+                        Console.WriteLine(queryCheckHoTen);
+                        using (SqlCommand myCommand = new SqlCommand(queryCheckHoTen, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
-                            maxIDKyThu.Load(myReader);
+                            checkHoTen.Load(myReader);
                             myReader.Close();
                         }
-                        int SoMaxIDKyThu = 0;
-                        if (maxIDKyThu.Rows.Count != 0)
+                        if(checkHoTen.Rows.Count > 0)
                         {
-                            SoMaxIDKyThu = int.Parse(maxIDKyThu.Rows[0][0].ToString());
-                        }
-
-                        if (SoMaxIDKyThu != 0)
-                        {                      
-                            int SoIDTuyenThu = int.Parse(IDTuyenThu.Rows[0][0].ToString());
-                            int IDPhieu = 0;
-                            string maSoPhieu = "PT";
-
-                            string getIDPhieuQuery = "select IDENT_CURRENT('PhieuThu') + 1";
-
-                            DataTable IDPhieuthu = new DataTable();
-
-                            using (SqlCommand myCommand = new SqlCommand(getIDPhieuQuery, myCon))
+                            using (SqlCommand myCommand = new SqlCommand(getIDQuery, myCon))
                             {
                                 myReader = myCommand.ExecuteReader();
-                                IDPhieuthu.Load(myReader);
+                                maxID.Load(myReader);
                                 myReader.Close();
                             }
 
-                            maSoPhieu = String.Concat(maSoPhieu, IDPhieuthu.Rows[0][0].ToString(),
-                                    "MKH", MaxIDKhachHang, "D", DateTime.Today.ToString("ddMMyyyy"));
+                            string MaxIDKhachHang = maxID.Rows[0][0].ToString();
+                            int SoMaxIDKhachHang = 6 - MaxIDKhachHang.Length;
 
-                            IDPhieu = int.Parse(IDPhieuthu.Rows[0][0].ToString());
+                            for (int i = 0; i < (SoMaxIDKhachHang); i++)
+                            {
+                                maKH = String.Concat(maKH, "0");
+                            }
+                            maKH = String.Concat(maKH, MaxIDKhachHang);
 
-                            string queryThemPhieuThu = @"insert into PhieuThu values (" + MaxIDKhachHang + @"," + SoIDTuyenThu + @"," + SoMaxIDKyThu + @",null,'" + maSoPhieu + "'," + kh.IDLoaiKhachHang + @",GETDATE(),null)";
-                            
-                            using (SqlCommand myCommand = new SqlCommand(queryThemPhieuThu, myCon))
+                            string query = @"insert into dbo.KhachHang values
+                            (" + MaxIDKhachHang + "," + kh.IDXaPhuong + @"," + kh.IDLoaiKhachHang + @",'" + maKH + @"',
+                            N'" + kh.HoTenKH + @"',N'" + kh.DiaChi + @"','" + kh.CCCD + @"',GETDATE(),null,1)";
+                            using (SqlCommand myCommand = new SqlCommand(query, myCon))
                             {
                                 myReader = myCommand.ExecuteReader();
                                 myReader.Close();
                             }
-                            myCon.Close();
-                            return new JsonResult(new
-                            {
-                                severity = "success",
-                                message = "Thêm Khách Hàng Và Phiếu Thu Thành Công"
-                            }
-                        );
-                        }
-                        else
-                        {
                             myCon.Close();
                             return new JsonResult(new
                             {
                                 severity = "success",
                                 message = "Thêm Khách Hàng Thành Công"
                             }
-                        );
-                        }                   
-                    }
-                    else
-                    {
-                        myCon.Close();
-                        return new JsonResult(new
-                        {
-                            severity = "warning",
-                            message = "Căn Cước Công Dân Đã Tồn Tại"
+                            );
                         }
-                        );
+                        else
+                        {
+                            myCon.Close();
+                            return new JsonResult(new
+                            {
+                                severity = "warning",
+                                message = "CCCD đã tồn tại nhưng Họ tên KH không trùng với Họ tên của CCCD đó"
+                            });
+                        }
                     }                
                 }              
             }
@@ -559,7 +550,7 @@ namespace ServerAPI.Controllers
                     }
                         
                 }
-                }
             }
+        }
     }
 }
