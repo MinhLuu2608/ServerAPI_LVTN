@@ -8,10 +8,10 @@ namespace ServerAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ServiceController : ControllerBase
+    public class DichVuController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-        public ServiceController(IConfiguration configuration)
+        public DichVuController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
@@ -36,7 +36,6 @@ namespace ServerAPI.Controllers
                 }
             }
             string query = string.Concat(selectQuery, whereQuery);
-            Console.WriteLine(query);
             DataTable table = new DataTable();
 
             SqlDataReader myReader;
@@ -106,6 +105,34 @@ namespace ServerAPI.Controllers
             return new JsonResult("Added Successfully");
         }
 
+        [HttpPut()]
+        public JsonResult Put(Service service)
+        {
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            SqlDataReader myReader;
+
+            string query = @"update DichVu set DonGiaDV = " + service.DonGiaDV +
+                " where IDDichVu = " + service.IDDichVu;
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                myCon.Close();
+                return new JsonResult(new
+                {
+                    severity = "success",
+                    message = "Chỉnh sửa dịch vụ thành công"
+                }
+                );
+            }
+        }
+
         [HttpPut("{id}/{status}")]
         public JsonResult PutStatus(int id, int status)
         {
@@ -146,7 +173,7 @@ namespace ServerAPI.Controllers
                     else
                     {
                         string queryDelete = @"Delete from DichVu where IDDichVu = " + id;
-                        using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                        using (SqlCommand myCommand = new SqlCommand(queryDelete, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
                             myReader.Close();
