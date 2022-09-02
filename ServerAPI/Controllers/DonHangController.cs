@@ -43,6 +43,33 @@ namespace ServerAPI.Controllers
             return new JsonResult(table);
         }
 
+        [HttpGet("{idDH}/{idNhanVien}")]
+        public JsonResult GetDonHangByID(int idDH, int idNhanVien)
+        {
+            string query = @"Select MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH, TinhTrangXuLy, TongTienDH,
+                DAY(NgayHen) as Ngay, MONTH(Ngayhen) as Thang, YEAR(NGAYHEN) as Nam
+                from DonHangDV 
+                join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang
+                where DonHangDV.IDDonHang = " + idDH + " and IDNhanVien = " + idNhanVien;
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+        }
+
         [HttpGet("chitiet/{idDH}")]
         public JsonResult GetChiTietDonHang(int idDH)
         {
@@ -388,9 +415,41 @@ namespace ServerAPI.Controllers
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
-                string queryUpdateTongTienDonHang = @"Update DonHangDV set TenKhachHang = " + dh.TenKhachHang + @",
-                    DiaChiKH = " + dh.DiaChiKH + ", SoDienThoaiKH = " + dh.SoDienThoaiKH + @"
-                    where IDDonHang =" + dh.IDDonHang;
+                string queryUpdateDonHang = @"Update DonHangDV set TenKhachHang = N'" + dh.TenKhachHang + @"',
+                    DiaChiKH = N'" + dh.DiaChiKH + "', SoDienThoaiKH = N'" + dh.SoDienThoaiKH + @"', 
+                    TongTienDH = " + dh.TongTienDH + @"
+                    where IDDonHang = " + dh.IDDonHang;
+                using (SqlCommand myCommand = new SqlCommand(queryUpdateDonHang, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                myCon.Close();
+                return new JsonResult(new
+                {
+                    severity = "success",
+                    message = "Chỉnh sửa thông tin đơn hàng thành công."
+                });
+            }
+        }
+
+        [HttpPut("editNgayHen")]
+        public JsonResult PutEditNgayHenDonHang(DonHang dh)
+        {
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                string queryUpdateDonHang = @"Update DonHangDV set NgayHen = '" + dh.NgayHen + @"'
+                    where IDDonHang = " + dh.IDDonHang;
+                using (SqlCommand myCommand = new SqlCommand(queryUpdateDonHang, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+
                 myCon.Close();
                 return new JsonResult(new
                 {
@@ -410,8 +469,8 @@ namespace ServerAPI.Controllers
             {
                 myCon.Open();
                 string queryUpdateChiTietDonHang = @"Update ChiTietDonHang set DonGia = " + ct.DonGia + @",
-                    SoLuong = " + ct.SoLuong + " TongTienDV = " + ct.TongTien +
-                    "where IDDonHang = " + ct.IDDonHang + " IDDichVu = " + ct.IDDichVu;
+                    SoLuong = " + ct.SoLuong + ", TongTienDV = " + ct.TongTienDV +
+                    "where IDDonHang = " + ct.IDDonHang + " and IDDichVu = " + ct.IDDichVu;
                 using (SqlCommand myCommand = new SqlCommand(queryUpdateChiTietDonHang, myCon))
                 {
                     myReader = myCommand.ExecuteReader();

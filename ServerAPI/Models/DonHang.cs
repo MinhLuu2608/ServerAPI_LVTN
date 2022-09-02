@@ -12,5 +12,6 @@
         public string? BuoiHen { get; set; }
         public string? Note { get; set; }
         public string? TinhTrangXuLy { get; set; }
+        public int? TongTienDH { get; set; }
     }
 }
