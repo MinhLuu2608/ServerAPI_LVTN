@@ -377,7 +377,7 @@ namespace ServerAPI.Controllers
                 }
                 string IDAccount = tblIDAccount.Rows[0][0].ToString();
                 string queryInsertAccount = @"Insert into Account values 
-                    (" + IDAccount + ", '" + username + "', '" + password + "', '" + sdt +"', 'anonymous.png')";
+                    (" + IDAccount + ", '" + username + "', '" + password + "', null, null, '" + sdt + "', 'anonymous.png')";
                 using (SqlCommand myCommand = new SqlCommand(queryInsertAccount, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
@@ -506,22 +506,54 @@ namespace ServerAPI.Controllers
 
         }
 
-        [HttpGet("getEmpHoaDon/{IDNhanVien}/{filterType}")]
-        public JsonResult getHDToEmpByIDAccountAndFilter(int IDNhanVien, int filterType)
+        [HttpGet("getEmpFilter/{IDNhanVien}/{filterType}")]
+        public JsonResult getHDToEmpByIDAccountAndFilter1(int IDNhanVien, int filterType)
         {
-            //Filter type = 1: Lọc theo kỳ thu
+            //Filter type = 0: Lọc theo kỳ thu
             //Filter type = 1: Lọc theo tuyến thu
             //Filter type = 2: Lọc theo khách hàng
-            //Filter type = 1: Lọc theo tình trạng thu
+            //Filter type = 3: Lọc theo tình trạng thu
 
-            string selectWhereString = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+            string selectWhereString = "";
+
+            string orderString = " order by ";
+
+            if (filterType == 0)
+            {
+                selectWhereString = @"Select IDKyThu, TenKyThu, Thang, Nam, 
+                    format(NgayTao, 'dd/MM/yyyy') as NgayTao from KyThu";
+                orderString = string.Concat(orderString, " Thang desc, Nam desc");
+            }
+            if (filterType == 1)
+            {
+                selectWhereString = @"Select TuyenThu.IDTuyenThu, MaTuyenThu, TenTuyenThu, 
+                    format(NgayBatDau, 'dd/MM/yyyy') as NgayBatDau, format(NgayKetThuc, 'dd/MM/yyyy') as NgayKetThuc 
+                    from TuyenThu
+                    join PhanTuyen on PhanTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
+                    where IDNhanVien = " + IDNhanVien;
+                orderString = string.Concat(orderString, " TuyenThu.IDTuyenThu");
+            }
+            if (filterType == 2)
+            {
+                selectWhereString = @"Select IDKhachHang, MaKhachHang, HoTenKH, DiaChi, CCCD
+                    from KhachHang 
+                    join XaPhuong on XaPhuong.IDXaPhuong = KhachHang.IDXaPhuong
+                    join ThuocTuyen on ThuocTuyen.IDXaPhuong = XaPhuong.IDXaPhuong
+                    join TuyenThu on TuyenThu.IDTuyenThu = ThuocTuyen.IDTuyenThu
+                    join PhanTuyen on PhanTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
+                    where IDNhanVien = " + IDNhanVien;
+                orderString = string.Concat(orderString, " KhachHang.IDKhachHang");
+            }
+            if (filterType == 3)
+            {
+                selectWhereString = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
                 format(HoaDon.NgayTao, 'dd/MM/yyyy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yyyy') as NgayThu, 
                 KyThu.TenKyThu, KyThu.Thang, TuyenThu.IDTuyenThu, TuyenThu.TenTuyenThu,
 				NhanVien.IDNhanVien, NhanVien.HoTen, NhanVien.SoDienThoai,
                 KhachHang.MaKhachHang, KhachHang.HoTenKH, LoaiKhachHang.Gia, LoaiKhachHang.TenLoai,
                 CONCAT(KhachHang.Diachi, N', Phường ' , TenXaPhuong, ', ' , TenQuanHuyen) as DiaChiKH
                 from NhanVien
-				join PhanTuyen on NhanVien.IDNhanVien = PhanTuyen.IDTuyenThu
+				join PhanTuyen on NhanVien.IDNhanVien = PhanTuyen.IDNhanVien
 				join TuyenThu on TuyenThu.IDTuyenThu = PhanTuyen.IDTuyenThu
 				join ThuocTuyen on ThuocTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
 				join XaPhuong on XaPhuong.IDXaPhuong = ThuocTuyen.IDXaPhuong
@@ -530,27 +562,133 @@ namespace ServerAPI.Controllers
                 join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu 
 				join QuanHuyen on QuanHuyen.IDQuanHuyen = XaPhuong.IDQuanHuyen
                 join LoaiKhachHang on LoaiKhachHang.IDLoaiKhachHang = KhachHang.IDLoaiKhachHang
-                where NhanVien.IDNhanVien = " + IDNhanVien + " ";
-            string orderString = " order by ";
-
-            if (filterType == 0)
-            {
-                orderString = string.Concat(orderString, " Thang desc, Nam desc");
-            }
-            if (filterType == 1)
-            {
-                orderString = string.Concat(orderString, " TuyenThu.IDTuyenThu");
-            }
-            if (filterType == 2)
-            {
-                orderString = string.Concat(orderString, " KhachHang.IDKhachHang");
-            }
-            if (filterType == 3)
-            {
+                where NhanVien.IDNhanVien = " + IDNhanVien;
                 orderString = string.Concat(orderString, " NgayThu");
             }
 
             string queryGetHoaDon = string.Concat(selectWhereString, orderString);
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetHoaDon, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+        }
+
+        [HttpGet("getEmpHoaDonFilter/{IDNhanVien}/{filterType}/{ID}")]
+        public JsonResult getHDToEmpByIDAccountAndFilter2(int IDNhanVien, int filterType, int ID)
+        {
+            //Filter type = 0: Lọc theo kỳ thu
+            //Filter type = 1: Lọc theo tuyến thu
+            //Filter type = 2: Lọc theo khách hàng
+
+            string selectWhereString = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+                format(HoaDon.NgayTao, 'dd/MM/yyyy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yyyy') as NgayThu, 
+                KyThu.TenKyThu, KyThu.Thang, TuyenThu.IDTuyenThu, TuyenThu.TenTuyenThu,
+				NhanVien.IDNhanVien, NhanVien.HoTen, NhanVien.SoDienThoai,
+                KhachHang.MaKhachHang, KhachHang.HoTenKH, LoaiKhachHang.Gia, LoaiKhachHang.TenLoai,
+                CONCAT(KhachHang.Diachi, N', Phường ' , TenXaPhuong, ', ' , TenQuanHuyen) as DiaChiKH
+                from NhanVien
+				join PhanTuyen on NhanVien.IDNhanVien = PhanTuyen.IDNhanVien
+				join TuyenThu on TuyenThu.IDTuyenThu = PhanTuyen.IDTuyenThu
+				join ThuocTuyen on ThuocTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
+				join XaPhuong on XaPhuong.IDXaPhuong = ThuocTuyen.IDXaPhuong
+				join KhachHang on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong 
+				join HoaDon on HoaDon.IDKhachHang = KhachHang.IDKhachHang
+                join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu 
+				join QuanHuyen on QuanHuyen.IDQuanHuyen = XaPhuong.IDQuanHuyen
+                join LoaiKhachHang on LoaiKhachHang.IDLoaiKhachHang = KhachHang.IDLoaiKhachHang ";
+            string whereString = " where NhanVien.IDNhanVien = " + IDNhanVien;
+            string orderString = " order by NgayThu";
+
+            if (filterType == 0)
+            {
+                whereString = string.Concat(whereString, " AND HoaDon.IDKyThu = " + ID);
+            }
+            if (filterType == 1)
+            {
+                whereString = string.Concat(whereString, " AND TuyenThu.IDTuyenThu = " + ID);
+            }
+            if (filterType == 2)
+            {
+                whereString = string.Concat(whereString, " AND HoaDon.IDKhachHang = " + ID);
+            }
+
+            string queryGetHoaDon = string.Concat(selectWhereString, whereString, orderString);
+            Console.WriteLine(queryGetHoaDon);
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetHoaDon, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+
+        }
+
+        [HttpGet("getEmpOrders/{IDNhanVien}/{filterType}")]
+        public JsonResult getDHToEmpByIDAccountAndFilter(int IDNhanVien, int filterType)
+        {
+            //Filter type = 0: "Chờ xử lý"
+            //Filter type = 1: "Đã tiếp nhận"
+            //Filter type = 2: "Đã hoàn thành"
+            // Filter type = 2: "Đã bị huỷ"
+
+            string selectWhereString = @"Select DonHangDV.IDDonHang, MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH,
+                format(NgayTao, 'dd/MM/yyyy') as NgayTao, format(NgayHen, 'dd/MM/yyyy') as NgayHen, BuoiHen,
+                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH
+                from DonHangDV 
+                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang";
+            string whereString = " ";
+            string orderString = " ";
+
+            if (filterType == 0)
+            {
+                whereString = string.Concat(whereString, " where TinhTrangXuLy = N'Chờ xử lý' ");
+                orderString = string.Concat(orderString, " order by NgayTao");
+            }
+            if (filterType == 1)
+            {
+                whereString = string.Concat(whereString, 
+                    " where TinhTrangXuLy = N'Đã tiếp nhận' and IDNhanVien = " + IDNhanVien);
+                orderString = string.Concat(orderString, " order by NgayHen");
+            }
+            if (filterType == 2)
+            {
+                whereString = string.Concat(whereString, 
+                    " where TinhTrangXuLy = N'Đã hoàn thành' and IDNhanVien = " + IDNhanVien);
+                orderString = string.Concat(orderString, " order by DonHangDV.IDDonHang desc");
+            }
+            if (filterType == 3)
+            {
+                whereString = string.Concat(whereString, 
+                    " where TinhTrangXuLy = N'Đã bị huỷ' and IDNhanVien = " + IDNhanVien);
+                orderString = string.Concat(orderString, " order by DonHangDV.IDDonHang desc");
+            }
+
+            string queryGetHoaDon = string.Concat(selectWhereString, whereString, orderString);
+            Console.WriteLine(queryGetHoaDon);
             DataTable table = new DataTable();
 
             SqlDataReader myReader;

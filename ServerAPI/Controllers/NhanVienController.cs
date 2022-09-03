@@ -314,7 +314,8 @@ namespace ServerAPI.Controllers
                 string IDAccount = tblGetIDAccount.Rows[0][0].ToString();
 
                 string queryInsertAccount = @"Insert into Account values 
-                    (" + IDAccount + ", '" + emp.TaiKhoan + "', '" + emp.MatKhau + "', '" + emp.SoDienThoai + "', '" + emp.ProfilePicture +"')";
+                    (" + IDAccount + ", '" + emp.TaiKhoan + "', '" + emp.MatKhau + "', N'" + emp.HoTen + 
+                    "', N'" + emp.DiaChi + "', " + "'" + emp.SoDienThoai + "', '" + emp.ProfilePicture +"')";
 
                 using (SqlCommand myCommand = new SqlCommand(queryInsertAccount, myCon))
                 {
