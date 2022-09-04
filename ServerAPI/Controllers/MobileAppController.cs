@@ -512,7 +512,7 @@ namespace ServerAPI.Controllers
             //Filter type = 0: Lọc theo kỳ thu
             //Filter type = 1: Lọc theo tuyến thu
             //Filter type = 2: Lọc theo khách hàng
-            //Filter type = 3: Lọc theo tình trạng thu
+            //Filter type = 3: Lọc theo chưa thu
 
             string selectWhereString = "";
 
@@ -562,7 +562,7 @@ namespace ServerAPI.Controllers
                 join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu 
 				join QuanHuyen on QuanHuyen.IDQuanHuyen = XaPhuong.IDQuanHuyen
                 join LoaiKhachHang on LoaiKhachHang.IDLoaiKhachHang = KhachHang.IDLoaiKhachHang
-                where NhanVien.IDNhanVien = " + IDNhanVien;
+                where NhanVien.IDNhanVien = " + IDNhanVien + " and NgayThu is null";
                 orderString = string.Concat(orderString, " NgayThu");
             }
 
