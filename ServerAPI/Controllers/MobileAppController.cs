@@ -391,7 +391,7 @@ namespace ServerAPI.Controllers
         [HttpGet("customerHoaDonInfo/{idHoaDon}")]
         public JsonResult getCustomerHoaDonInfo(int idHoaDon)
         {
-            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoHoaDon, 
                 format(HoaDon.NgayTao, 'dd/MM/yyyy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yyyy') as NgayThu, 
                 KyThu.TenKyThu, KyThu.Thang, Account.IDAccount,
                 KhachHang.MaKhachHang, KhachHang.HoTenKH, LoaiKhachHang.Gia, LoaiKhachHang.TenLoai,
@@ -430,7 +430,7 @@ namespace ServerAPI.Controllers
         public JsonResult getHDToEmpByIDAccountAndFilter(int idHoaDon)
         {
 
-            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoHoaDon, 
                 format(HoaDon.NgayTao, 'dd/MM/yyyy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yyyy') as NgayThu, 
                 KyThu.TenKyThu, KyThu.Thang, TuyenThu.IDTuyenThu, TuyenThu.TenTuyenThu,
 				NhanVien.IDNhanVien, NhanVien.HoTen, NhanVien.SoDienThoai,
@@ -471,7 +471,7 @@ namespace ServerAPI.Controllers
         [HttpGet("getHoaDon/{IDAccount}")]
         public JsonResult getHDToKHByIDAccount(int IDAccount)
         {
-            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+            string queryGetHoaDon = @"Select HoaDon.IDHoaDon, HoaDon.MaSoHoaDon, 
                 format(HoaDon.NgayTao, 'dd/MM/yyyy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yyyy') as NgayThu, 
                 KyThu.TenKyThu, KyThu.Thang, Account.IDAccount,
                 KhachHang.MaKhachHang, KhachHang.HoTenKH, LoaiKhachHang.Gia, LoaiKhachHang.TenLoai,
@@ -546,7 +546,7 @@ namespace ServerAPI.Controllers
             }
             if (filterType == 3)
             {
-                selectWhereString = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+                selectWhereString = @"Select HoaDon.IDHoaDon, HoaDon.MaSoHoaDon, 
                 format(HoaDon.NgayTao, 'dd/MM/yyyy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yyyy') as NgayThu, 
                 KyThu.TenKyThu, KyThu.Thang, TuyenThu.IDTuyenThu, TuyenThu.TenTuyenThu,
 				NhanVien.IDNhanVien, NhanVien.HoTen, NhanVien.SoDienThoai,
@@ -593,7 +593,7 @@ namespace ServerAPI.Controllers
             //Filter type = 1: Lọc theo tuyến thu
             //Filter type = 2: Lọc theo khách hàng
 
-            string selectWhereString = @"Select HoaDon.IDHoaDon, HoaDon.MaSoPhieu, 
+            string selectWhereString = @"Select HoaDon.IDHoaDon, HoaDon.MaSoHoaDon, 
                 format(HoaDon.NgayTao, 'dd/MM/yyyy') as NgayTao, format(HoaDon.NgayThu, 'dd/MM/yyyy') as NgayThu, 
                 KyThu.TenKyThu, KyThu.Thang, TuyenThu.IDTuyenThu, TuyenThu.TenTuyenThu,
 				NhanVien.IDNhanVien, NhanVien.HoTen, NhanVien.SoDienThoai,
@@ -688,7 +688,6 @@ namespace ServerAPI.Controllers
             }
 
             string queryGetHoaDon = string.Concat(selectWhereString, whereString, orderString);
-            Console.WriteLine(queryGetHoaDon);
             DataTable table = new DataTable();
 
             SqlDataReader myReader;
@@ -707,6 +706,65 @@ namespace ServerAPI.Controllers
             }
             return new JsonResult(table);
 
+        }
+
+        [HttpGet("getEmpOrdersInfo/{IDDonHang}")]
+        public JsonResult getDonHangInfoByID(int IDDonHang)
+        {
+
+            string query = @"Select DonHangDV.IDDonHang, MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH,
+                format(NgayTao, 'dd/MM/yyyy') as NgayTao, format(NgayHen, 'dd/MM/yyyy') as NgayHen, BuoiHen,
+                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH
+                from DonHangDV 
+                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang
+                where DonHangDV.IDDonHang = " + IDDonHang;
+
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+
+        }
+
+        [HttpGet("getEmpOrdersServiceInfo/{IDDonHang}")]
+        public JsonResult getDHDichVuInfoByID(int IDDonHang)
+        {
+
+            string query = @"Select DichVu.IDDichVu, TenDichVu, DonViTinh, DonGia, SoLuong, TongTienDV
+                from DonHangDV 
+                join ChiTietDonHang on DonHangDV.IDDonHang = ChiTietDonHang.IDDonHang
+                join DichVu on DichVu.IDDichVu = ChiTietDonHang.IDDichVu
+                where DonHangDV.IDDonHang = " + IDDonHang;
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
         }
 
         [HttpPost("link")]

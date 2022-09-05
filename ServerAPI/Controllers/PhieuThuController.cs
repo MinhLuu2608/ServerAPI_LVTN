@@ -20,7 +20,7 @@ namespace ServerAPI.Controllers
         [HttpGet]
         public JsonResult Get()
         {
-            string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+            string query = @"select HoaDon.MaSoHoaDon, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
                 KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,TuyenThu.MaTuyenThu,
                 TuyenThu.IDTuyenThu,TuyenThu.TenTuyenThu,KyThu.IDKyThu,KyThu.TenKyThu,
 	            KyThu.Thang,KyThu.Nam,NhanVien.MaNhanVien,NhanVien.IDNhanVien,NhanVien.HoTen,HoaDon.NgayTao,
@@ -89,7 +89,7 @@ namespace ServerAPI.Controllers
                     if(tableCheckHinhThuc.Rows.Count > 0)
                     {
                         //Hoá đơn thanh toán trực tiếp
-                        string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                        string query = @"select HoaDon.MaSoHoaDon, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
                         KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi, 
                         KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
                         HoaDon.NgayThu,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia,
@@ -128,7 +128,7 @@ namespace ServerAPI.Controllers
                     else
                     {
                         //Hoá đơn thanh toán online
-                        string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                        string query = @"select HoaDon.MaSoHoaDon, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
                         KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi, 
                         KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
                         HoaDon.NgayThu,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia,
@@ -166,7 +166,7 @@ namespace ServerAPI.Controllers
                 else
                 {
                     //Hoá đơn chưa thu
-                    string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+                    string query = @"select HoaDon.MaSoHoaDon, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
                         KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,
                         KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
                         HoaDon.NgayThu,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia,
@@ -196,49 +196,13 @@ namespace ServerAPI.Controllers
                     );
                 }
             }
-
-
-    //        string query = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
-    //            KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,TuyenThu.MaTuyenThu,
-    //            TuyenThu.IDTuyenThu,TuyenThu.TenTuyenThu,KyThu.IDKyThu,KyThu.TenKyThu,
-	   //         KyThu.Thang,KyThu.Nam,NhanVien.MaNhanVien,NhanVien.IDNhanVien,NhanVien.HoTen,HoaDon.NgayTao,
-    //            HoaDon.NgayThu, XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
-    //            QuanHuyen.TenQuanHuyen,LoaiKhachHang.IDLoaiKhachHang, LoaiKhachHang.TenLoai,LoaiKhachHang.Gia
-    //            from HoaDon
-    //            inner join KhachHang on HoaDon.IDKhachHang = KhachHang.IDKhachHang
-				//full outer join HDThanhToanTrucTiep on HDThanhToanTrucTiep.IDHoaDon = HoaDon.IDHoaDon
-    //            FULL OUTER join TuyenThu on HDThanhToanTrucTiep.IDTuyenThu = TuyenThu.IDTuyenThu
-    //            inner join KyThu on HoaDon.IDKyThu = KyThu.IDKyThu
-    //            FULL OUTER join NhanVien on HDThanhToanTrucTiep.IDNhanVien = NhanVien.IDNhanVien
-    //            inner join XaPhuong on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
-    //            inner join QuanHuyen on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
-    //            inner join LoaiKhachHang on KhachHang.IDLoaiKhachHang = LoaiKhachHang.IDLoaiKhachHang
-    //               order by KhachHang.IDKhachHang,KyThu.Thang ASC
-    //        ";
-    //        DataTable table = new DataTable();
-    //        string sqlDataSource = _configuration.GetConnectionString("DBCon");
-    //        SqlDataReader myReader;
-    //        using (SqlConnection myCon = new SqlConnection(sqlDataSource))
-    //        {
-    //            myCon.Open();
-    //            using (SqlCommand myCommand = new SqlCommand(query, myCon))
-    //            {
-    //                myReader = myCommand.ExecuteReader();
-    //                table.Load(myReader);
-
-    //                myReader.Close();
-    //                myCon.Close();
-    //            }
-    //        }
-
-    //        return new JsonResult(table);
         }
 
         [HttpGet("{idQuanHuyen}/{idTuyenThu}/{idXaPhuong}/{idKyThu}/{idKhachHang}/{idLoaiKhachHang}/{idHinhThuc}/{idNhanVien}/{idTrangThai}")]
         public JsonResult GetByConditions(int idQuanHuyen, int idTuyenThu, int idXaPhuong,
             int idKyThu, int idKhachHang, int idLoaiKhachHang, int idHinhThuc, int idNhanVien, int idTrangThai)
         {
-            string selectFromString = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+            string selectFromString = @"select HoaDon.MaSoHoaDon, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
                 KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,
                 KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
                 HoaDon.NgayThu,XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
@@ -415,7 +379,7 @@ namespace ServerAPI.Controllers
         public JsonResult GetByEmpAndConditions(int idNhanVien, int idKyThu, int idKhachHang, 
             int idLoaiKhachHang, int idHinhThuc, int idTrangThai)
         {
-            string selectFromString = @"select HoaDon.MaSoPhieu, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
+            string selectFromString = @"select HoaDon.MaSoHoaDon, HoaDon.IDHoaDon,KhachHang.MaKhachHang,
                 KhachHang.IDKhachHang,KhachHang.HoTenKH, KhachHang.DiaChi,
                 KyThu.IDKyThu,KyThu.TenKyThu,KyThu.Thang,KyThu.Nam,HoaDon.NgayTao,
                 HoaDon.NgayThu,XaPhuong.IDXaPhuong,XaPhuong.TenXaPhuong,QuanHuyen.IDQuanHuyen,
@@ -863,9 +827,9 @@ namespace ServerAPI.Controllers
 
                     maxIDPhieu = dt.Rows[0][0].ToString();
                     gia = int.Parse(dtGia.Rows[0][0].ToString());
-                    string maSoPhieu = "PT" + maxIDPhieu + "MKH" + pt.IDKhachHang + "D" + DateTime.Today.ToString("ddMMyyyy");
+                    string maSoHoaDon = "PT" + maxIDPhieu + "MKH" + pt.IDKhachHang + "D" + DateTime.Today.ToString("ddMMyyyy");
                     string query = @"insert into HoaDon values ("+ maxIDPhieu + "," + pt.IDKhachHang + "," 
-                        + pt.IDKyThu + @",'" + maSoPhieu + @"',GETDATE(),null," + gia + ")";
+                        + pt.IDKyThu + @",'" + maSoHoaDon + @"',GETDATE(),null," + gia + ")";
                     using (SqlCommand myCommand = new SqlCommand(query, myCon))
                     {
                         myReader = myCommand.ExecuteReader();

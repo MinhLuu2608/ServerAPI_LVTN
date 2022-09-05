@@ -287,7 +287,7 @@ namespace ServerAPI.Controllers
                         for (int i = 0; i < table2.Rows.Count; i++)
                         {
                             string getIDPhieuQuery = "select max(IDHoaDon) + 1 from HoaDon";
-                            string maSoPhieu = "HD";
+                            string maSoHoaDon = "HD";
                             DataTable tableID = new DataTable();
                             using (SqlCommand myCommand = new SqlCommand(getIDPhieuQuery, myCon))
                             {
@@ -301,10 +301,10 @@ namespace ServerAPI.Controllers
                             int giaTien = int.Parse(table2.Rows[i][3].ToString());
 
                             int IDMauSoPhieu = int.Parse(table2.Rows[i][2].ToString());
-                            maSoPhieu = String.Concat(maSoPhieu, IDPhieu,
+                            maSoHoaDon = String.Concat(maSoHoaDon, IDPhieu,
                                 "MKH", IDKH, "D", DateTime.Today.ToString("ddMMyyyy"));
                             string query4 = @"insert into HoaDon values (" + IDPhieu + ","
-                                + IDKH + @"," + IDKyThuInsert + @",'" + maSoPhieu +
+                                + IDKH + @"," + IDKyThuInsert + @",'" + maSoHoaDon +
                                 @"',GETDATE(),null," + giaTien + ")";
 
                             using (SqlCommand myCommand = new SqlCommand(query4, myCon))
