@@ -244,7 +244,6 @@ namespace ServerAPI.Controllers
                 }
                 else
                 {
-                    Console.WriteLine(status);
                     if (status)
                     {
                         using (SqlCommand myCommand = new SqlCommand(queryCheckTuyenThuKhachHang, myCon))
@@ -276,8 +275,8 @@ namespace ServerAPI.Controllers
                         }
                         string IDKyThuInsert = tblGetIDKyThu.Rows[0][0].ToString();
                         string query = @"insert into dbo.KyThu values(" + IDKyThuInsert +
-                            ",N'Kỳ thu tháng " + kt.Thang + " năm " + kt.Nam +
-                            "','" + kt.Thang + "','" + kt.Nam + "', SYSDATETIME())";
+                            ", N'Kỳ thu tháng " + kt.Thang + " năm " + kt.Nam +
+                            "', " + kt.Thang + ", " + kt.Nam + ", SYSDATETIME())";
                         using (SqlCommand myCommand = new SqlCommand(query, myCon))
                         {
                             myReader = myCommand.ExecuteReader();
@@ -303,10 +302,9 @@ namespace ServerAPI.Controllers
                             int IDMauSoPhieu = int.Parse(table2.Rows[i][2].ToString());
                             maSoHoaDon = String.Concat(maSoHoaDon, IDPhieu,
                                 "MKH", IDKH, "D", DateTime.Today.ToString("ddMMyyyy"));
-                            string query4 = @"insert into HoaDon values (" + IDPhieu + ","
-                                + IDKH + @"," + IDKyThuInsert + @",'" + maSoHoaDon +
-                                @"',GETDATE(),null," + giaTien + ")";
-
+                            string query4 = @"insert into HoaDon values (" + IDPhieu + ", "
+                                + IDKH + @", " + IDKyThuInsert + @", '" + maSoHoaDon +
+                                @"', GETDATE(), null, " + giaTien + ")";
                             using (SqlCommand myCommand = new SqlCommand(query4, myCon))
                             {
                                 myReader = myCommand.ExecuteReader();

@@ -239,6 +239,30 @@ namespace ServerAPI.Controllers
 
         }
 
+        [HttpGet("getInfoAccount/{idAccount}")]
+        public JsonResult getInfoAccount(int idAccount)
+        {
+            string query = "Select * from account where IDAccount = " + idAccount;
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+        }
+
         [HttpGet("getEmpID/{idAccount}")]
         public JsonResult getIDNhanVien(int idAccount)
         {
@@ -648,18 +672,20 @@ namespace ServerAPI.Controllers
         }
 
         [HttpGet("getEmpOrders/{IDNhanVien}/{filterType}")]
-        public JsonResult getDHToEmpByIDAccountAndFilter(int IDNhanVien, int filterType)
+        public JsonResult getDHToEmpByIDNhanVienAndFilter(int IDNhanVien, int filterType)
         {
             //Filter type = 0: "Chờ xử lý"
             //Filter type = 1: "Đã tiếp nhận"
             //Filter type = 2: "Đã hoàn thành"
-            // Filter type = 2: "Đã bị huỷ"
+            // Filter type = 3: "Đã bị huỷ"
 
             string selectWhereString = @"Select DonHangDV.IDDonHang, MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH,
                 format(NgayTao, 'dd/MM/yyyy') as NgayTao, format(NgayHen, 'dd/MM/yyyy') as NgayHen, BuoiHen,
-                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH
+                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH, 
+                MaNhanVien, HoTen, SoDienThoai
                 from DonHangDV 
-                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang";
+                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang
+                full outer join NhanVien on NhanVien.IDNhanVien = ChiTietTiepNhanDonHang.IDNhanVien";
             string whereString = " ";
             string orderString = " ";
 
@@ -684,6 +710,69 @@ namespace ServerAPI.Controllers
             {
                 whereString = string.Concat(whereString, 
                     " where TinhTrangXuLy = N'Đã bị huỷ' and IDNhanVien = " + IDNhanVien);
+                orderString = string.Concat(orderString, " order by DonHangDV.IDDonHang desc");
+            }
+
+            string queryGetHoaDon = string.Concat(selectWhereString, whereString, orderString);
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetHoaDon, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+
+        }
+
+        [HttpGet("getCustomerOrders/{IDAccount}/{filterType}")]
+        public JsonResult getDHToCusByIDAccountAndFilter(int IDAccount, int filterType)
+        {
+            //Filter type = 0: "Chờ xử lý"
+            //Filter type = 1: "Đã tiếp nhận"
+            //Filter type = 2: "Đã hoàn thành"
+            // Filter type = 3: "Đã bị huỷ"
+
+            string selectWhereString = @"Select DonHangDV.IDDonHang, MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH,
+                format(NgayTao, 'dd/MM/yyyy') as NgayTao, format(NgayHen, 'dd/MM/yyyy') as NgayHen, BuoiHen,
+                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH, 
+                MaNhanVien, HoTen, SoDienThoai
+                from DonHangDV 
+                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang
+                full outer join NhanVien on NhanVien.IDNhanVien = ChiTietTiepNhanDonHang.IDNhanVien";
+            string whereString = " where IDAccount = " + IDAccount;
+            string orderString = " ";
+
+            if (filterType == 0)
+            {
+                whereString = string.Concat(whereString, " and TinhTrangXuLy = N'Chờ xử lý' ");
+                orderString = string.Concat(orderString, " order by NgayTao");
+            }
+            if (filterType == 1)
+            {
+                whereString = string.Concat(whereString,
+                    " and TinhTrangXuLy = N'Đã tiếp nhận'");
+                orderString = string.Concat(orderString, " order by NgayHen");
+            }
+            if (filterType == 2)
+            {
+                whereString = string.Concat(whereString,
+                    " and TinhTrangXuLy = N'Đã hoàn thành' ");
+                orderString = string.Concat(orderString, " order by DonHangDV.IDDonHang desc");
+            }
+            if (filterType == 3)
+            {
+                whereString = string.Concat(whereString,
+                    " and TinhTrangXuLy = N'Đã bị huỷ'");
                 orderString = string.Concat(orderString, " order by DonHangDV.IDDonHang desc");
             }
 
@@ -739,7 +828,8 @@ namespace ServerAPI.Controllers
 
         }
 
-        [HttpGet("getEmpOrdersServiceInfo/{IDDonHang}")]
+
+        [HttpGet("getOrdersServiceInfo/{IDDonHang}")]
         public JsonResult getDHDichVuInfoByID(int IDDonHang)
         {
 
@@ -867,6 +957,28 @@ namespace ServerAPI.Controllers
                 }
                 myCon.Close();
                 return new JsonResult("Xác nhận thanh toán thành công.");
+            }
+        }
+
+        [HttpPut("editinfo")]
+        public void PutEditAccountInfo(Account account)
+        {
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            string queryUpdateAccount = "Update Account set HoTenAccount = N'" + account.HoTen + 
+                "', DiaChiAccount = N'" + account.DiaChi + "', SDT = '" + account.SDT + 
+                "' where IDAccount = " + account.IDAccount;
+            Console.WriteLine(queryUpdateAccount);
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryUpdateAccount, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                myCon.Close();
             }
         }
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Data.SqlClient;
 using System.Data;
 using ServerAPI.Models;
+using System;
 
 namespace ServerAPI.Controllers
 {
@@ -74,11 +75,19 @@ namespace ServerAPI.Controllers
                     myReader.Close();
                 }
                 string idDV = table.Rows[0][0].ToString();
-                try
+                int SoMaxIDDV = 3 - idDV.Length;
+                string maDV = "DV";
+
+                for (int i = 0; i < (SoMaxIDDV); i++)
                 {
-                    string queryInsert = "insert into dbo.DichVu values(" + idDV +
-                        ", N'" + service.LoaiDichVu + "', N'" + service.TenDichVu + "', N'" + service.DonViTinh +
-                        "', " + service.DonGiaDV + ",1)";
+                    maDV = String.Concat(maDV, "0");
+                }
+                maDV = String.Concat(maDV, idDV);
+                //try
+                //{
+                string queryInsert = "insert into dbo.DichVu values(" + idDV + ", N'" + maDV + 
+                        "', N'" + service.LoaiDichVu + "', N'" + service.TenDichVu + "', N'" + service.MoTaDV + "', N'" + service.DonViTinh +
+                        "', " + service.DonGiaDV + ", 1)";
                     using (SqlCommand myCommand = new SqlCommand(queryInsert, myCon))
                     {
                         myReader = myCommand.ExecuteReader();
@@ -90,16 +99,16 @@ namespace ServerAPI.Controllers
                         severity = "success",
                         message = "Thêm dịch vụ thành công"
                     });
-                }
-                catch (Exception ex)
-                {
-                    myCon.Close();
-                    return new JsonResult(new
-                    {
-                        severity = "warning",
-                        message = "Tên dịch vụ không thể trùng"
-                    });
-                }
+                //}
+                //catch (Exception ex)
+                //{
+                //    myCon.Close();
+                //    return new JsonResult(new
+                //    {
+                //        severity = "warning",
+                //        message = "Tên dịch vụ không thể trùng"
+                //    });
+                //}
             }
 
             return new JsonResult("Added Successfully");
@@ -112,7 +121,7 @@ namespace ServerAPI.Controllers
             SqlDataReader myReader;
 
             string query = @"update DichVu set DonGiaDV = " + service.DonGiaDV +
-                " where IDDichVu = " + service.IDDichVu;
+                ", MoTaDV = N'" + service.MoTaDV + "' where IDDichVu = " + service.IDDichVu;
 
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {

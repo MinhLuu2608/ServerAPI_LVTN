@@ -7,7 +7,7 @@
         public string? TenDichVu { get; set; }
         public string? DonViTinh { get; set; }
         public int? DonGiaDV { get; set; }
-
+        public string? MoTaDV { get; set; }
 
     }
 }
