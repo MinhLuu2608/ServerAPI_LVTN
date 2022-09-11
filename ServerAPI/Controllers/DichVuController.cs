@@ -56,6 +56,29 @@ namespace ServerAPI.Controllers
             return new JsonResult(table);
         }
 
+        [HttpPost("searchDV")]
+        public JsonResult PostSearchDichVu(Service service)
+        {
+            string query = "Select * from DichVu where TenDichVu like N'%" + service.TenDichVu + "%'" +
+                " and TinhTrangDV = 1";
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+        }
+
         [HttpPost]
         public JsonResult Post(Service service)
         {

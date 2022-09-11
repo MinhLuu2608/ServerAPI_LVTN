@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Data.SqlClient;
 using System.Data;
 using ServerAPI.Models;
+using System;
 
 namespace ServerAPI.Controllers
 {
@@ -797,6 +798,45 @@ namespace ServerAPI.Controllers
 
         }
 
+        [HttpGet("getSearchOrder/{maDH}")]
+        public JsonResult getDHToCusByIDAccountAndFilter(string maDH)
+        {
+            //Filter type = 0: "Chờ xử lý"
+            //Filter type = 1: "Đã tiếp nhận"
+            //Filter type = 2: "Đã hoàn thành"
+            // Filter type = 3: "Đã bị huỷ"
+
+            string selectWhereString = @"Select DonHangDV.IDDonHang, MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH,
+                format(NgayTao, 'dd/MM/yyyy') as NgayTao, format(NgayHen, 'dd/MM/yyyy') as NgayHen, BuoiHen,
+                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH, 
+                MaNhanVien, HoTen, SoDienThoai
+                from DonHangDV 
+                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang
+                full outer join NhanVien on NhanVien.IDNhanVien = ChiTietTiepNhanDonHang.IDNhanVien";
+            string whereString = " where MaDonHang = '" + maDH + "'";
+            string orderString = " ";
+
+            string queryGetHoaDon = string.Concat(selectWhereString, whereString, orderString);
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetHoaDon, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+
+        }
+
         [HttpGet("getEmpOrdersInfo/{IDDonHang}")]
         public JsonResult getDonHangInfoByID(int IDDonHang)
         {
@@ -960,6 +1000,76 @@ namespace ServerAPI.Controllers
             }
         }
 
+        [HttpPost("request/{idDV}/")]
+        public JsonResult PostRequestService(DonHang donHang, int idDV)
+        {
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            string queryGetIDDH = "Select max(IDDonHang) + 1 from DonHangDV";
+            DataTable tblGetIDDH = new DataTable();
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetIDDH, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblGetIDDH.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            string idDH = tblGetIDDH.Rows[0][0].ToString();
+            string maDH = "DH";
+            int SoMaxIDDH = 4 - idDH.Length;
+
+            for (int i = 0; i < (SoMaxIDDH); i++)
+            {
+                maDH = String.Concat(maDH, "0");
+            }
+            maDH = String.Concat(maDH, idDH);
+
+            string queryGetDichVu = "Select * from DichVu where IDDichVu = " + idDV;
+            DataTable tblGetDichVu = new DataTable();
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetDichVu, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblGetDichVu.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            string donGiaDV = tblGetDichVu.Rows[0]["DonGiaDV"].ToString();
+
+            string queryInsertDH = "insert into dbo.DonHangDV values(" + idDH + ", " + donHang.IDAccount + ", '" 
+                + maDH + "', N'" + donHang.TenKhachHang + "', N'" + donHang.DiaChiKH + "', '"
+                + donHang.SoDienThoaiKH + "', sysdatetime(), null, N'', null, N'Chờ xử lý', N'', " + donGiaDV + ")";
+            
+            string queryInsertChiTietDH = "insert into dbo.ChiTietDonHang values(" + idDH + ", " + idDV + ", " 
+                + donGiaDV + ", 1, " + donGiaDV + ")";
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryInsertDH, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                using (SqlCommand myCommand = new SqlCommand(queryInsertChiTietDH, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                myCon.Close();
+            }
+            return new JsonResult("Yêu cầu dịch vụ thành công");
+        }
+
         [HttpPut("editinfo")]
         public void PutEditAccountInfo(Account account)
         {
@@ -969,7 +1079,6 @@ namespace ServerAPI.Controllers
             string queryUpdateAccount = "Update Account set HoTenAccount = N'" + account.HoTen + 
                 "', DiaChiAccount = N'" + account.DiaChi + "', SDT = '" + account.SDT + 
                 "' where IDAccount = " + account.IDAccount;
-            Console.WriteLine(queryUpdateAccount);
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
@@ -1006,6 +1115,42 @@ namespace ServerAPI.Controllers
                 }
                 myCon.Close();
             }        
+        }
+
+        [HttpDelete("delete/{idDH}")]
+        public JsonResult DeleteCancelByKH(int idDH)
+        {
+            string queryCheck = "Select * from DonHangDV where TinhTrangXuLy = N'Chờ xử lý' and IDDonHang = " + idDH;
+            DataTable tblCheck = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryCheck, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblCheck.Load(myReader);
+                    myReader.Close();
+                }
+                if (tblCheck.Rows.Count == 0)
+                {
+                    return new JsonResult("Đơn hàng đã được xử lý không thể huỷ.");
+                }
+                string queryCancelChiTiet = "Delete from ChiTietDonHang where IDDonHang = " + idDH;
+                using (SqlCommand myCommand = new SqlCommand(queryCancelChiTiet, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                string queryCancel = "Delete from DonHangDV where IDDonHang = " + idDH;
+                using (SqlCommand myCommand = new SqlCommand(queryCancel, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                return new JsonResult("Đơn hàng được huỷ thành công");
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
     public class DonHang
     {
         public int? IDDonHang { get; set; }
+        public int? IDAccount { get; set; }
         public int? IDNhanVien { get; set; }
         public string? MaDonHang { get; set; }
         public string? TenKhachHang { get; set; }
