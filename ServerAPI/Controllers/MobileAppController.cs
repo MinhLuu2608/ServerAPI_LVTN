@@ -698,19 +698,19 @@ namespace ServerAPI.Controllers
             if (filterType == 1)
             {
                 whereString = string.Concat(whereString, 
-                    " where TinhTrangXuLy = N'Đã tiếp nhận' and IDNhanVien = " + IDNhanVien);
+                    " where TinhTrangXuLy = N'Đã tiếp nhận' and NhanVien.IDNhanVien = " + IDNhanVien);
                 orderString = string.Concat(orderString, " order by NgayHen");
             }
             if (filterType == 2)
             {
-                whereString = string.Concat(whereString, 
-                    " where TinhTrangXuLy = N'Đã hoàn thành' and IDNhanVien = " + IDNhanVien);
+                whereString = string.Concat(whereString,
+                    " where TinhTrangXuLy = N'Đã hoàn thành' and NhanVien.IDNhanVien = " + IDNhanVien);
                 orderString = string.Concat(orderString, " order by DonHangDV.IDDonHang desc");
             }
             if (filterType == 3)
             {
-                whereString = string.Concat(whereString, 
-                    " where TinhTrangXuLy = N'Đã bị huỷ' and IDNhanVien = " + IDNhanVien);
+                whereString = string.Concat(whereString,
+                    " where TinhTrangXuLy = N'Đã bị huỷ' and NhanVien.IDNhanVien = " + IDNhanVien);
                 orderString = string.Concat(orderString, " order by DonHangDV.IDDonHang desc");
             }
 
@@ -733,6 +733,42 @@ namespace ServerAPI.Controllers
             }
             return new JsonResult(table);
 
+        }
+
+        [HttpGet("getOrderInfo/{idDH}")]
+        public JsonResult getOrderInfo(int idDH)
+        {
+            //Filter type = 0: "Chờ xử lý"
+            //Filter type = 1: "Đã tiếp nhận"
+            //Filter type = 2: "Đã hoàn thành"
+            // Filter type = 3: "Đã bị huỷ"
+
+            string queryGetHoaDon = @"Select DonHangDV.IDDonHang, MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH,
+                format(NgayTao, 'dd/MM/yyyy') as NgayTao, format(NgayHen, 'dd/MM/yyyy') as NgayHen, BuoiHen,
+                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH, 
+                MaNhanVien, HoTen, SoDienThoai
+                from DonHangDV 
+                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang
+                full outer join NhanVien on NhanVien.IDNhanVien = ChiTietTiepNhanDonHang.IDNhanVien
+                where DonHangDV.IDDonHang = " + idDH;
+            
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryGetHoaDon, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
         }
 
         [HttpGet("getCustomerOrders/{IDAccount}/{filterType}")]
@@ -826,37 +862,6 @@ namespace ServerAPI.Controllers
             {
                 myCon.Open();
                 using (SqlCommand myCommand = new SqlCommand(queryGetHoaDon, myCon))
-                {
-                    myReader = myCommand.ExecuteReader();
-                    table.Load(myReader);
-                    myReader.Close();
-                    myCon.Close();
-                }
-            }
-            return new JsonResult(table);
-
-        }
-
-        [HttpGet("getEmpOrdersInfo/{IDDonHang}")]
-        public JsonResult getDonHangInfoByID(int IDDonHang)
-        {
-
-            string query = @"Select DonHangDV.IDDonHang, MaDonHang, TenKhachHang, DiaChiKH, SoDienThoaiKH,
-                format(NgayTao, 'dd/MM/yyyy') as NgayTao, format(NgayHen, 'dd/MM/yyyy') as NgayHen, BuoiHen,
-                format(NgayThu, 'dd/MM/yyyy') as NgayThu, TinhTrangXuLy, Note, TongTienDH
-                from DonHangDV 
-                full outer join ChiTietTiepNhanDonHang on DonHangDV.IDDonHang = ChiTietTiepNhanDonHang.IDDonHang
-                where DonHangDV.IDDonHang = " + IDDonHang;
-
-            DataTable table = new DataTable();
-
-            SqlDataReader myReader;
-            string sqlDataSource = _configuration.GetConnectionString("DBCon");
-
-            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
-            {
-                myCon.Open();
-                using (SqlCommand myCommand = new SqlCommand(query, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
                     table.Load(myReader);
@@ -1000,6 +1005,59 @@ namespace ServerAPI.Controllers
             }
         }
 
+        [HttpPost("acceptOrder")]
+        public JsonResult PostAcceptDonHang(TiepNhanDH dh)
+        {
+
+            string checkQuery = @"Select * from DonHangDV where NgayHen is not null and IDDonhang = " + dh.IDDonhang;
+            DataTable tblCheck = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(checkQuery, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblCheck.Load(myReader);
+                    myReader.Close();
+                }
+                if (tblCheck.Rows.Count > 0)
+                {
+                    myCon.Close();
+                    return new JsonResult("Đơn hàng này đã được tiếp nhận. Hãy kiểm tra lại");
+                }
+
+                DateTime ngayHen = DateTime.Parse(dh.NgayHen);
+                DateTime today = DateTime.Today;
+                if (DateTime.Compare(ngayHen, today) < 0)
+                {
+                    myCon.Close();
+                    return new JsonResult("Ngày Hẹn không thể nhỏ hơn ngày hiện tại");
+                }
+
+                string queryUpdateDonHang = @"Update DonHangDV set NgayHen = '" + dh.NgayHen + @"', 
+                    BuoiHen = N'" + dh.BuoiHen + @"', TinhTrangXuLy = N'Đã tiếp nhận' 
+                    where IDDonHang = " + dh.IDDonhang;
+                string queryInsertTiepNhanDH = @"Insert into ChiTietTiepNhanDonHang values(
+                    " + dh.IDDonhang + ", " + dh.IDNhanVien + ")";
+                using (SqlCommand myCommand = new SqlCommand(queryUpdateDonHang, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                using (SqlCommand myCommand = new SqlCommand(queryInsertTiepNhanDH, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                myCon.Close();
+                return new JsonResult("Tiếp nhận đơn hàng thành công.");
+            }
+        }
+
         [HttpPost("request/{idDV}/")]
         public JsonResult PostRequestService(DonHang donHang, int idDV)
         {
@@ -1091,6 +1149,42 @@ namespace ServerAPI.Controllers
             }
         }
 
+        [HttpPut("editOrder")]
+        public JsonResult PutEditOrderInfo(DonHang donHang)
+        {
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            string queryUpdateInfoDonHang = "Update DonHangDV set TenKhachHang = N'" + donHang.TenKhachHang
+                + "', DiaChiKH = N'" + donHang.DiaChiKH + "', SoDienThoaiKH = N'" + donHang.SoDienThoaiKH
+                + "', TongTienDH = " + donHang.TongTienDH + " where IDDonHang = " + donHang.IDDonHang;
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryUpdateInfoDonHang, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+
+                for(int i=0; i < donHang.DichVuList.Length; i++)
+                {
+                    string queryUpdateChiTietDH = "Update ChiTietDonHang " +
+                        "set SoLuong = " + donHang.DichVuList[i].SoLuong
+                        + ", TongTienDV = " + donHang.DichVuList[i].TongTienDV + " where IDDonHang = "
+                        + donHang.IDDonHang + " and IDDichVu = " + donHang.DichVuList[i].IDDichVu;
+                    using (SqlCommand myCommand = new SqlCommand(queryUpdateChiTietDH, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
+                        myReader.Close();
+                    }
+                }
+                myCon.Close();
+                return new JsonResult("Chỉnh sửa đơn hàng thành công");
+            }
+        }
+
         [HttpPut("payment")]
         public void PutOnlinePayment(OnlinePayment paymentInfo)
         {
@@ -1149,6 +1243,62 @@ namespace ServerAPI.Controllers
                     myReader = myCommand.ExecuteReader();
                     myReader.Close();
                 }
+                myCon.Close();
+                return new JsonResult("Đơn hàng được huỷ thành công");
+            }
+        }
+
+        [HttpDelete("cancelByNV/")]
+        public JsonResult DeleteCancelByNV(DonHang donHang)
+        {
+            string queryCheck = "Select * from DonHangDV where TinhTrangXuLy = N'Chờ xử lý' and IDDonHang = " + donHang.IDDonHang;
+            DataTable tblCheck = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryCheck, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblCheck.Load(myReader);
+                    myReader.Close();
+                }
+
+                string queryCheckTiepNhan = "Select * from ChiTietTiepNhanDonHang where IDDonHang = " + donHang.IDDonHang
+                    + " and IDNhanVien = " + donHang.IDNhanVien;
+                DataTable tblCheckTiepNhan = new DataTable();
+                using (SqlCommand myCommand = new SqlCommand(queryCheckTiepNhan, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tblCheckTiepNhan.Load(myReader);
+                    myReader.Close();
+                }
+                if (tblCheck.Rows.Count == 0 && tblCheckTiepNhan.Rows.Count == 0)
+                {
+                    return new JsonResult("Đơn hàng đã được xử lý hoặc bị huỷ bởi khách hàng hoặc nhân viên khác.");
+                }
+
+
+                string queryInsertTiepNhan = "Insert into ChiTietTiepNhanDonHang values(" + donHang.IDDonHang +
+                    ", " + donHang.IDNhanVien + ")";
+                string queryCancel = "Update DonHangDV set TinhTrangXuLy = N'Đã bị huỷ', Note = N'" + donHang.Note +
+                    "' where IDDonHang = " + donHang.IDDonHang;
+
+                if(tblCheckTiepNhan.Rows.Count == 0)
+                {
+                    using (SqlCommand myCommand = new SqlCommand(queryInsertTiepNhan, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
+                        myReader.Close();
+                    }
+                }
+                using (SqlCommand myCommand = new SqlCommand(queryCancel, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                myCon.Close();
                 return new JsonResult("Đơn hàng được huỷ thành công");
             }
         }

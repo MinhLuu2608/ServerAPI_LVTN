@@ -14,5 +14,7 @@
         public string? Note { get; set; }
         public string? TinhTrangXuLy { get; set; }
         public int? TongTienDH { get; set; }
+
+        public Service[]? DichVuList { get; set; }
     }
 }

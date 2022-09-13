@@ -9,5 +9,8 @@
         public int? DonGiaDV { get; set; }
         public string? MoTaDV { get; set; }
 
+        public int? SoLuong { get; set; }
+        public int? TongTienDV { get; set; }
+
     }
 }
