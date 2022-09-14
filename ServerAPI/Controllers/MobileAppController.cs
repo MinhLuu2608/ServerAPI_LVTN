@@ -873,7 +873,6 @@ namespace ServerAPI.Controllers
 
         }
 
-
         [HttpGet("getOrdersServiceInfo/{IDDonHang}")]
         public JsonResult getDHDichVuInfoByID(int IDDonHang)
         {
@@ -956,6 +955,38 @@ namespace ServerAPI.Controllers
                 myCon.Close();
                 return new JsonResult("Liên kết thành công");
             }
+        }
+
+        [HttpPost("checkRepass")]
+        public JsonResult PostCheckRepass(Account account)
+        {
+            string query = "Select * from account where IDAccount = " + account.IDAccount +
+                " and password = '" + account.Password + "'";
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            if (table.Rows.Count > 0)
+            {
+                return new JsonResult("OK");
+            }
+            else
+            {
+                return new JsonResult("Mật khẩu không đúng!");
+            }
+
         }
 
         [HttpPost("confirm")]
@@ -1149,6 +1180,27 @@ namespace ServerAPI.Controllers
             }
         }
 
+        [HttpPut("changePassword")]
+        public JsonResult PutChangePassword(Account account)
+        {
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            string queryUpdateAccount = "Update Account set Password = N'" + account.Password + 
+                "' where IDAccount = " + account.IDAccount;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(queryUpdateAccount, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+                myCon.Close();
+            }
+            return new JsonResult("Thay đổi mật khẩu thành công");
+        }
+
         [HttpPut("editOrder")]
         public JsonResult PutEditOrderInfo(DonHang donHang)
         {
@@ -1162,6 +1214,7 @@ namespace ServerAPI.Controllers
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
+                Console.WriteLine(queryUpdateInfoDonHang);
                 using (SqlCommand myCommand = new SqlCommand(queryUpdateInfoDonHang, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
@@ -1182,6 +1235,44 @@ namespace ServerAPI.Controllers
                 }
                 myCon.Close();
                 return new JsonResult("Chỉnh sửa đơn hàng thành công");
+            }
+        }
+
+        [HttpPut("doneOrder")]
+        public JsonResult PutDoneOrderInfo(DonHang donHang)
+        {
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            string queryUpdateInfoDonHang = "Update DonHangDV set TenKhachHang = N'" + donHang.TenKhachHang
+                + "', DiaChiKH = N'" + donHang.DiaChiKH + "', SoDienThoaiKH = N'" + donHang.SoDienThoaiKH +
+                "', TongTienDH = " + donHang.TongTienDH + ", NgayThu = sysdatetime(), TinhTrangXuLy = N'Đã hoàn thành'"
+                + " where IDDonHang = " + donHang.IDDonHang;
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                Console.WriteLine(queryUpdateInfoDonHang);
+                using (SqlCommand myCommand = new SqlCommand(queryUpdateInfoDonHang, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    myReader.Close();
+                }
+
+                for (int i = 0; i < donHang.DichVuList.Length; i++)
+                {
+                    string queryUpdateChiTietDH = "Update ChiTietDonHang " +
+                        "set SoLuong = " + donHang.DichVuList[i].SoLuong
+                        + ", TongTienDV = " + donHang.DichVuList[i].TongTienDV + " where IDDonHang = "
+                        + donHang.IDDonHang + " and IDDichVu = " + donHang.DichVuList[i].IDDichVu;
+                    using (SqlCommand myCommand = new SqlCommand(queryUpdateChiTietDH, myCon))
+                    {
+                        myReader = myCommand.ExecuteReader();
+                        myReader.Close();
+                    }
+                }
+                myCon.Close();
+                return new JsonResult("Hoàn thành đơn hàng thành công");
             }
         }
 
