@@ -296,6 +296,58 @@ namespace ServerAPI.Controllers
 
         }
 
+        [HttpGet("getEmpRole/{idNV}")]
+        public JsonResult getEmpRole(int idNV)
+        {
+            string getQuyen1 = "Select IDQuyen from PhanQuyen where IDQuyen = 1 and IDNhanVien = " + idNV;
+            string getQuyen2 = "Select IDQuyen from PhanQuyen where IDQuyen = 2 and IDNhanVien = " + idNV;
+            string getQuyen3 = "Select IDQuyen from PhanQuyen where IDQuyen = 3 and IDNhanVien = " + idNV;
+
+            DataTable tableQuyen1 = new DataTable();
+            DataTable tableQuyen2 = new DataTable();
+            DataTable tableQuyen3 = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(getQuyen1, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tableQuyen1.Load(myReader);
+                    myReader.Close();
+                }
+                using (SqlCommand myCommand = new SqlCommand(getQuyen2, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tableQuyen2.Load(myReader);
+                    myReader.Close();
+                }
+                using (SqlCommand myCommand = new SqlCommand(getQuyen3, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    tableQuyen3.Load(myReader);
+                    myReader.Close();
+                }
+                myCon.Close();
+            }
+            if (tableQuyen1.Rows.Count > 0 && tableQuyen2.Rows.Count == 0 && tableQuyen3.Rows.Count == 0)
+            {
+                return new JsonResult("Quản trị");
+            }
+            if(tableQuyen2.Rows.Count > 0 && tableQuyen3.Rows.Count == 0)
+            {
+                return new JsonResult("Thu tiền");
+            }
+            if (tableQuyen2.Rows.Count == 0 && tableQuyen3.Rows.Count > 0)
+            {
+                return new JsonResult("Dịch vụ");
+            }
+            return new JsonResult("Thu tiền & Dịch vụ");
+        }
+
         [HttpGet("getEmp/{idNhanVien}")]
         public JsonResult getNhanVienInfo(int idNhanVien)
         {
