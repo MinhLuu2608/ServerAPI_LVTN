@@ -170,80 +170,43 @@ namespace ServerAPI.Controllers
 
         }
 
-        [HttpPut]
-        public JsonResult Put(NhanVien staff)
+        [HttpPost("checkRepass")]
+        public JsonResult PostCheckRepass(Account account)
         {
-
-            string query = @"
-                UPDATE dbo.NhanVien SET 
-                MaNhanVien = '" + staff.MaNhanVien + @"',
-                HoTen = N'" + staff.HoTen + @"',
-                Email = '" + staff.Email + @"',
-                GioiTinh = N'" + staff.GioiTinh + @"',
-                SoDienThoai = '" + staff.SoDienThoai + @"',
-                NgaySinh = '" + staff.NgaySinh + @"',
-                DiaChi = N'" + staff.DiaChi + @"',
-                CCCD = '" + staff.CCCD + @"',
-                TaiKhoan = '" + staff.TaiKhoan + @"',
-                MatKhau = '" + staff.MatKhau + @"' 
-                WHERE IDNhanVien = '" + staff.IDNhanVien + @"'
-                ";
-
-            string query1 = @"select * from NhanVien where CCCD = " + staff.CCCD;
+            string query = "Select * from account where IDAccount = " + account.IDAccount +
+                " and password = '" + account.Password + "'";
             DataTable table = new DataTable();
 
-            string checkQuery = @"select * from NhanVien where (Email = '" + staff.Email + "' or CCCD = '" + staff.CCCD + "' or SoDienThoai = '" + staff.SoDienThoai + "') and IDNhanVien != " + staff.IDNhanVien;
-
-            string sqlDataSource = _configuration.GetConnectionString("DBCon");
             SqlDataReader myReader;
-            SqlDataReader myReader1;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
 
-            DataTable checkData = new DataTable();
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
-
-                using (SqlCommand myCommand = new SqlCommand(checkQuery, myCon))
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
-                    checkData.Load(myReader);
+                    table.Load(myReader);
                     myReader.Close();
-                }
-
-                if (checkData.Rows.Count > 0)
-                {
                     myCon.Close();
-                    return new JsonResult(new
-                    {
-                        severity = "warning",
-                        message = "Đã Tồn Tại Nhân Viên Với"
-                    }
-                        );
-                }
-                else
-                {
-
-                }
-                {
-                    using (SqlCommand myCommand = new SqlCommand(query, myCon))
-                    {
-
-                        myReader = myCommand.ExecuteReader();
-                        table.Load(myReader);
-                        myReader.Close();
-                        myCon.Close();
-
-                        return new JsonResult(new
-                        {
-                            severity = "success",
-                            message = "Chỉnh Sửa Nhân Viên Thành Công"
-                        }
-                        );
-                    }
                 }
             }
+            if (table.Rows.Count > 0)
+            {
+                return new JsonResult(new
+                {
+                    severity = "success",
+                    message = "OK"
+                });
+            }
+            else
+            {
+                return new JsonResult(new
+                {
+                    severity = "warning",
+                    message = "Mật khẩu không đúng!"
+                });
+            }
         }
-
-
-        }
+    }
 }
