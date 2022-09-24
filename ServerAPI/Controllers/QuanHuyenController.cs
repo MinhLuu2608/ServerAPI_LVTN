@@ -76,7 +76,7 @@ namespace ServerAPI.Controllers
         public JsonResult GetByStatus(int idNhanVien)
         {
             string query = @"
-                select * from QuanHuyen
+                select distinct QuanHuyen.IDQuanHuyen, TenQuanHuyen from QuanHuyen
                 join PhanTuyen on QuanHuyen.IDQuanHuyen = PhanTuyen.IDQuanHuyen
                 where IDNhanVien =" + idNhanVien
             ;
