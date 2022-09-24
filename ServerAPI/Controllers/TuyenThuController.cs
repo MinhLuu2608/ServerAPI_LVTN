@@ -74,22 +74,22 @@ namespace ServerAPI.Controllers
                 {
                     if(idNhanVien == int.Parse(table.Rows[i][1].ToString()))
                     {
-                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên:", table.Rows[i][0], " (Hiện tại)");
+                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên: ", table.Rows[i][0], " (Hiện tại)");
                     }
                     else
                     {
-                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên:", table.Rows[i][0]);
+                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên: ", table.Rows[i][0]);
                     }
                 }
                 else
                 {
                     if (idNhanVien == int.Parse(table.Rows[i][1].ToString()))
                     {
-                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên:", table.Rows[i][0], " (Hiện tại)\n");
+                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên: ", table.Rows[i][0], " (Hiện tại)\n");
                     }
                     else
                     {
-                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên:", table.Rows[i][0], "\n");
+                        result = string.Concat(result, "ID:", table.Rows[i][1], ". Họ tên: ", table.Rows[i][0], "\n");
                     }
                     
                 }
