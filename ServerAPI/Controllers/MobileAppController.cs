@@ -81,7 +81,6 @@ namespace ServerAPI.Controllers
                 myCon.Open();
                 using (SqlCommand myCommand = new SqlCommand(getNgayThangKyThuQuery, myCon))
                 {
-                    Console.WriteLine(getNgayThangKyThuQuery);
                     myReader = myCommand.ExecuteReader();
                     tableNgayThangKyThu.Load(myReader);
                     myReader.Close();
@@ -703,7 +702,6 @@ namespace ServerAPI.Controllers
             }
 
             string queryGetHoaDon = string.Concat(selectWhereString, whereString, orderString);
-            Console.WriteLine(queryGetHoaDon);
             DataTable table = new DataTable();
 
             SqlDataReader myReader;
@@ -1265,7 +1263,6 @@ namespace ServerAPI.Controllers
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
-                Console.WriteLine(queryUpdateInfoDonHang);
                 using (SqlCommand myCommand = new SqlCommand(queryUpdateInfoDonHang, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
@@ -1303,7 +1300,6 @@ namespace ServerAPI.Controllers
             using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
                 myCon.Open();
-                Console.WriteLine(queryUpdateInfoDonHang);
                 using (SqlCommand myCommand = new SqlCommand(queryUpdateInfoDonHang, myCon))
                 {
                     myReader = myCommand.ExecuteReader();
