@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Data.SqlClient;
 using System.Data;
+using Microsoft.Extensions.Configuration;
 
 namespace ServerAPI.Controllers
 {
@@ -22,10 +23,10 @@ namespace ServerAPI.Controllers
             // loai == 1: Hóa đơn tháng
             // loai == 2: Đơn hàng dịch vụ
             string query = "";
-            if(loai == -1)
+            if (loai == -1)
             {
                 query = @"
-                    select ThangThu, Sum(DoanhThu) as DoanhThu
+                    select ThangThu, Sum(DoanhThu) as 'Doanh thu'
                     from (
 	                    select Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)) as ThangThu, 
                             SUM(Gia) as DoanhThu
@@ -44,22 +45,22 @@ namespace ServerAPI.Controllers
                     group by ThangThu
                 ";
             }
-            if(loai == 1)
+            if (loai == 1)
             {
                 query = @"
                     select Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)) as ThangThu, 
-                        SUM(Gia) as DoanhThu
+                        SUM(Gia) as 'Doanh thu'
 	                from HoaDon 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as varchar) like '" + nam + @"'
 	                group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar))
                 ";
             }
-            if(loai == 2)
+            if (loai == 2)
             {
                 query = @"
                     select Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)) as ThangThu, 
-                        SUM(TongTienDH) as DoanhThu
+                        SUM(TongTienDH) as 'Doanh thu'
 	                from DonHangDV 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as varchar) like '" + nam + @"'
@@ -95,7 +96,7 @@ namespace ServerAPI.Controllers
             if (loai == -1)
             {
                 query = @"
-                    select NamThu, Sum(DoanhThu) as DoanhThu
+                    select NamThu, Sum(DoanhThu) as 'Doanh thu'
                     from (
 	                    select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
                             SUM(Gia) as DoanhThu
@@ -118,7 +119,7 @@ namespace ServerAPI.Controllers
             {
                 query = @"
                     select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                        SUM(Gia) as DoanhThu
+                        SUM(Gia) as 'Doanh thu'
 	                from HoaDon 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
@@ -129,7 +130,7 @@ namespace ServerAPI.Controllers
             {
                 query = @"
                     select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                        SUM(TongTienDH) as DoanhThu
+                        SUM(TongTienDH) as 'Doanh thu'
 	                from DonHangDV 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
@@ -154,5 +155,102 @@ namespace ServerAPI.Controllers
             }
             return new JsonResult(table);
         }
+
+        [HttpGet("khachhangtheoquan/")]
+        public JsonResult GetKhachHangTheoQuan()
+        {
+            string query = @"select TenQuanHuyen, Count(*) as N'Khách hàng' 
+                from QuanHuyen
+                join XaPhuong on XaPhuong.IDQuanHuyen = QuanHuyen.IDQuanHuyen
+                join KhachHang on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                where NgayKetThuc is null
+                group by TenQuanHuyen
+            ";
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+        }
+
+        [HttpGet("khachhangtheotuyen/{idQuanHuyen}")]
+        public JsonResult GetKhachHangTheoTuyen(int idQuanHuyen)
+        {
+            string query = @"Select TenTuyenThu, count(*) as N'Khách hàng'
+                from TuyenThu
+                join PhanTuyen on PhanTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
+                join QuanHuyen on QuanHuyen.IDQuanHuyen = PhanTuyen.IDQuanHuyen
+                join ThuocTuyen on ThuocTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
+                join XaPhuong on XaPhuong.IDXaPhuong = ThuocTuyen.IDXaPhuong
+                join KhachHang on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                where KhachHang.NgayKetThuc is null and PhanTuyen.NgayKetThuc is null 
+                    and QuanHuyen.IDQuanHuyen = " + idQuanHuyen + @"
+                group by TenTuyenThu
+            ";
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+        }
+
+        [HttpGet("khachhangtheoxp/{idTuyen}")]
+        public JsonResult GetKhachHangTheoXP(int idTuyen)
+        {
+            string query = @"Select TenXaPhuong, count(*) as N'Khách hàng'
+                from TuyenThu
+                join PhanTuyen on PhanTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
+                join QuanHuyen on QuanHuyen.IDQuanHuyen = PhanTuyen.IDQuanHuyen
+                join ThuocTuyen on ThuocTuyen.IDTuyenThu = TuyenThu.IDTuyenThu
+                join XaPhuong on XaPhuong.IDXaPhuong = ThuocTuyen.IDXaPhuong
+                join KhachHang on KhachHang.IDXaPhuong = XaPhuong.IDXaPhuong
+                where KhachHang.NgayKetThuc is null and PhanTuyen.NgayKetThuc is null 
+                    and TuyenThu.IDTuyenThu = " + idTuyen + @"
+                group by TenXaPhuong
+            ";
+            DataTable table = new DataTable();
+
+            SqlDataReader myReader;
+            string sqlDataSource = _configuration.GetConnectionString("DBCon");
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
+        }
     }
+
+
 }
