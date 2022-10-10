@@ -29,42 +29,49 @@ namespace ServerAPI.Controllers
                     select ThangThu, Sum(DoanhThu) as 'Doanh thu'
                     from (
 	                    select Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)) as ThangThu, 
-                            SUM(Gia) as DoanhThu
+                            Cast(Month(CAST(NgayThu as datetime)) as int) as Number, SUM(Gia) as DoanhThu
 	                    from HoaDon 
                         where NgayThu is not null and 
                             Cast(YEAR(CAST(NgayThu as datetime)) as varchar) like '" + nam + @"'
-	                    group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar))
+	                    group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)), 
+                            Cast(Month(CAST(NgayThu as datetime)) as int)
 	                    union
 	                    select Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)) as ThangThu, 
-                            SUM(TongTienDH) as DoanhThu
+                            Cast(Month(CAST(NgayThu as datetime)) as int) as Number, SUM(TongTienDH) as DoanhThu
 	                    from DonHangDV 
                         where NgayThu is not null and 
                             Cast(YEAR(CAST(NgayThu as datetime)) as varchar) like '" + nam + @"'
-	                    group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar))
+	                    group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)), 
+                            Cast(Month(CAST(NgayThu as datetime)) as int)
 	                    ) as DoanhThu
-                    group by ThangThu
+                    group by ThangThu, Number
+					order by Number
                 ";
             }
             if (loai == 1)
             {
                 query = @"
                     select Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)) as ThangThu, 
-                        SUM(Gia) as 'Doanh thu'
+                        Cast(Month(CAST(NgayThu as datetime)) as int) as Number, SUM(Gia) as 'Doanh thu'
 	                from HoaDon 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as varchar) like '" + nam + @"'
-	                group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar))
+	                group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)), 
+                        Cast(Month(CAST(NgayThu as datetime)) as int)
+                    order by Number
                 ";
             }
             if (loai == 2)
             {
                 query = @"
                     select Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)) as ThangThu, 
-                        SUM(TongTienDH) as 'Doanh thu'
+                        Cast(Month(CAST(NgayThu as datetime)) as int) as Number, SUM(TongTienDH) as 'Doanh thu'
 	                from DonHangDV 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as varchar) like '" + nam + @"'
-	                group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar))
+	                group by Concat(N'Tháng ', Cast(Month(CAST(NgayThu as datetime)) as varchar)), 
+                        Cast(Month(CAST(NgayThu as datetime)) as int)
+                    order by Number
                 ";
             }
             DataTable table = new DataTable();
@@ -99,42 +106,49 @@ namespace ServerAPI.Controllers
                     select NamThu, Sum(DoanhThu) as 'Doanh thu'
                     from (
 	                    select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                            SUM(Gia) as DoanhThu
+                            Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(Gia) as DoanhThu
 	                    from HoaDon 
                         where NgayThu is not null and 
                             Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
-	                    group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar))
+	                    group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)),
+							Cast(Year(CAST(NgayThu as datetime)) as int)
 	                    union
 	                    select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                            SUM(TongTienDH) as DoanhThu
+                            Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(TongTienDH) as DoanhThu
 	                    from DonHangDV 
                         where NgayThu is not null and 
                             Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
-	                    group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar))
+	                    group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)),
+							Cast(Year(CAST(NgayThu as datetime)) as int)
 	                    ) as DoanhThu
-                    group by NamThu
+                    group by NamThu, Number
+					order by Number
                 ";
             }
             if (loai == 1)
             {
                 query = @"
                     select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                        SUM(Gia) as 'Doanh thu'
+                        Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(Gia) as DoanhThu
 	                from HoaDon 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
-	                group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar))
+	                group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)),
+						Cast(Year(CAST(NgayThu as datetime)) as int)
+                    order by Number
                 ";
             }
             if (loai == 2)
             {
                 query = @"
                     select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                        SUM(TongTienDH) as 'Doanh thu'
+                        Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(TongTienDH) as DoanhThu
 	                from DonHangDV 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
-	                group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar))
+	                group by Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)),
+					    Cast(Year(CAST(NgayThu as datetime)) as int)
+                    order by Number
                 ";
             }
             DataTable table = new DataTable();
