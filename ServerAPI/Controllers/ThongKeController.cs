@@ -129,7 +129,7 @@ namespace ServerAPI.Controllers
             {
                 query = @"
                     select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                        Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(Gia) as DoanhThu
+                        Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(Gia) as 'Doanh thu'
 	                from HoaDon 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
@@ -142,7 +142,7 @@ namespace ServerAPI.Controllers
             {
                 query = @"
                     select Concat(N'Năm ', Cast(Year(CAST(NgayThu as datetime)) as varchar)) as NamThu, 
-                        Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(TongTienDH) as DoanhThu
+                        Cast(Year(CAST(NgayThu as datetime)) as int) as Number, SUM(TongTienDH) as 'Doanh thu'
 	                from DonHangDV 
                     where NgayThu is not null and 
                         Cast(YEAR(CAST(NgayThu as datetime)) as int) between " + tuNam + " and " + denNam + @"
