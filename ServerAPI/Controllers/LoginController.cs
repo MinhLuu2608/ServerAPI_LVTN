@@ -144,7 +144,10 @@ namespace ServerAPI.Controllers
         {
             string query = @"select * from Account 
                 join NhanVienAccount on NhanVienAccount.IDAccount = Account.IDAccount 
-                where Username = '" + login.Username + "' and [password] = '" + login.Password + "'";
+                join NhanVien on NhanVien.IDNhanVien = NhanVienAccount.IDNhanVien
+                join PhanQuyen on NhanVien.IDNhanVien = PhanQuyen.IDNhanVien
+                where Username = '" + login.Username + "' and [password] = '" + login.Password + @"' 
+                and IDQuyen = 1";
             string sqlDataSource = _configuration.GetConnectionString("DBCon");
             DataTable table = new DataTable(); 
             SqlDataReader myReader;
