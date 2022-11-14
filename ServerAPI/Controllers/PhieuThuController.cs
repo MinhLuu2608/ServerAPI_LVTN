@@ -311,9 +311,9 @@ namespace ServerAPI.Controllers
                     whereString = string.Concat(whereString, " AND LoaiKhachHang.IDLoaiKhachHang = ", idLoaiKhachHang);
                 }
             }
-            if(idHinhThuc != 2)
+            if(idHinhThuc == 1)
             {
-                //Khong phai hinh thuc thanh toan online thì duyệt where của idNhanVien
+                //Hinh thuc thanh toan truc tiep thì duyệt where của idNhanVien
                 if (idNhanVien != -1)
                 {
                     if (isFirstCondition)
