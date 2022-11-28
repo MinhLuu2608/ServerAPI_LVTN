@@ -344,7 +344,11 @@ namespace ServerAPI.Controllers
             {
                 return new JsonResult("Dịch vụ");
             }
-            return new JsonResult("Thu tiền & Dịch vụ");
+            if (tableQuyen2.Rows.Count > 0 && tableQuyen3.Rows.Count > 0)
+            {
+                return new JsonResult("Thu tiền & Dịch vụ");
+            }
+            return new JsonResult("Không có quyền");
         }
 
         [HttpGet("getEmp/{idNhanVien}")]
